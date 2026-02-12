@@ -178,6 +178,39 @@
     }
     .ticketMeta b{color:var(--text)}
 
+    /* WAITING screen */
+    .waitPulse{
+      margin-top:10px;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      gap:12px;
+      color:var(--muted);
+      font-size:14px;
+    }
+    .spinner{
+      width:20px; height:20px; border-radius:50%;
+      border:3px solid rgba(255,255,255,.18);
+      border-top-color: rgba(56,189,248,.9);
+      animation:spin 1s linear infinite;
+    }
+    @keyframes spin{ to { transform: rotate(360deg); } }
+
+    /* VIDEO screen */
+    .videoWrap{
+      border:1px solid rgba(255,255,255,.10);
+      background:rgba(3,7,18,.30);
+      border-radius:22px;
+      padding:12px;
+      min-height:360px;
+    }
+    .videoTitle{
+      display:flex; justify-content:space-between; align-items:center;
+      margin-bottom:10px;
+    }
+    .videoTitle h3{margin:0; font-size:16px}
+    .videoHint{color:var(--muted); font-size:12px}
+
     /* Right panel (debug/config) */
     label{display:block; font-size:13px; color:var(--muted); margin:10px 0 8px}
     input, select{
@@ -220,7 +253,7 @@
     <header>
       <div>
         <h1>Branch Queue Kiosk</h1>
-        <p>Step flow: Request → Phone keypad → Submit → Ticket number</p>
+        <p>Step flow: Request → Phone keypad → Submit → Ticket number → Poll status → Video</p>
       </div>
       <div class="status">
         <span id="dot" class="dot"></span>
@@ -242,9 +275,7 @@
             </div>
           </div>
 
-          <div class="gridReq" id="reqGrid">
-            <!-- populated by JS -->
-          </div>
+          <div class="gridReq" id="reqGrid"></div>
 
           <div class="actionsRow">
             <button class="btn" id="toggleConfigBtn" type="button">Show/Hide Config</button>
@@ -311,6 +342,49 @@
             <button class="btn" id="toggleConfigBtn3" type="button">Show/Hide Config</button>
           </div>
         </div>
+
+        <!-- NEW: Waiting-for-status screen -->
+        <div id="screenWaiting" class="screen hidden">
+          <div class="screenTop">
+            <h2>Please wait</h2>
+            <p>Waiting for an agent to be ready for you.</p>
+            <div class="waitPulse"><div class="spinner"></div><div id="waitStatusText">Polling work item status…</div></div>
+          </div>
+
+          <div class="ticketMeta">
+            <div><b>Request</b><br><span id="wReq">—</span></div>
+            <div><b>Phone</b><br><span id="wPhone">—</span></div>
+            <div><b>Work Item</b><br><span id="wWorkItemId">—</span></div>
+            <div><b>Last status</b><br><span id="wLastStatus">—</span></div>
+          </div>
+
+          <div class="actionsRow">
+            <button class="btn danger big" id="cancelWaitBtn" type="button">Cancel</button>
+            <button class="btn" id="toggleConfigBtn4" type="button">Show/Hide Config</button>
+          </div>
+        </div>
+
+        <!-- NEW: Video screen -->
+        <div id="screenVideo" class="screen hidden">
+          <div class="screenTop">
+            <h2>Video call</h2>
+            <p>An agent is ready. Please start your video call.</p>
+          </div>
+
+          <div class="videoWrap">
+            <div class="videoTitle">
+              <h3>TrueEngage Video Widget</h3>
+              <div class="videoHint" id="videoHint">Loading widget…</div>
+            </div>
+            <!-- Widget usually renders itself; we still keep a mount area for clarity -->
+            <div id="videoMount" style="min-height:300px;"></div>
+          </div>
+
+          <div class="actionsRow">
+            <button class="btn primary big" id="endVideoBtn" type="button">Done</button>
+            <button class="btn" id="toggleConfigBtn5" type="button">Show/Hide Config</button>
+          </div>
+        </div>
       </section>
 
       <!-- RIGHT: Config / Debug (hide during demo) -->
@@ -360,12 +434,15 @@
           <input id="workItemType" value="Kiosk" />
         </details>
 
-        <details class="note">
-          <summary style="cursor:pointer;"><b>Ticket number style</b></summary>
+        <details class="note" open>
+          <summary style="cursor:pointer;"><b>Polling / Video trigger</b></summary>
           <p style="margin:8px 0 0;">
-            Demo ticket shown is <b>4 digits</b>. If the API returns an ID, we hash it into a stable 4-digit value.
-            Otherwise we increment a local counter.
+            Kiosk polls the created Work Item every <b>2 seconds</b>.
+            When the Work Item's status name equals <code>Waiting For Customer</code>, this page loads the TrueEngage widget and shows the Video screen.
           </p>
+
+          <label for="statusTrigger">Trigger status name</label>
+          <input id="statusTrigger" value="Waiting For Customer" />
         </details>
 
         <h3 style="margin:14px 0 6px;font-size:14px;">Debug output</h3>
@@ -379,6 +456,9 @@
   const CLIENT_ID = "5ad8dc1d-2ee1-41dd-9771-1c0e58f22203";
   const ENVIRONMENT = "mypurecloud.jp";
   const REDIRECT_URI = window.location.origin + window.location.pathname;
+
+  const TRUEENGAGE_WIDGET_SRC = "https://asset.trueengage.com/accounts/2bd08d9d-10f2-4da4-a021-ed7bd163b6ff/widget.js";
+  const POLL_INTERVAL_MS = 2000;
 
   // ====== Requests in kiosk menu ======
   const REQUEST_OPTIONS = [
@@ -419,9 +499,7 @@
   }
 
   function showScreen(which){
-    $("screenRequest").classList.add("hidden");
-    $("screenPhone").classList.add("hidden");
-    $("screenTicket").classList.add("hidden");
+    ["screenRequest","screenPhone","screenTicket","screenWaiting","screenVideo"].forEach(id => $(id).classList.add("hidden"));
     $(which).classList.remove("hidden");
   }
 
@@ -484,7 +562,7 @@
     window.location.href = url;
   }
 
-  // ====== Work Item API call ======
+  // ====== Work Item APIs ======
   async function createWorkItem(apiBase, token, payload){
     const url = apiBase.replace(/\/$/, "") + "/api/v2/taskmanagement/workitems";
     const res = await fetch(url, {
@@ -507,22 +585,104 @@
     return data;
   }
 
+  async function getWorkItem(apiBase, token, workItemId){
+    const url = apiBase.replace(/\/$/, "") + `/api/v2/taskmanagement/workitems/${encodeURIComponent(workItemId)}`;
+    const res = await fetch(url, {
+      method: "GET",
+      headers: {
+        "Authorization": `Bearer ${token}`,
+        "Accept": "application/json"
+      }
+    });
+
+    const text = await res.text();
+    let data;
+    try { data = text ? JSON.parse(text) : {}; } catch { data = { raw: text }; }
+
+    if (!res.ok){
+      throw new Error(`Get work item failed (${res.status}): ${JSON.stringify(data)}`);
+    }
+    return data;
+  }
+
   // ====== Ticket number: stable 4-digit from id, or local counter fallback ======
   function hashTo4Digits(str) {
     let h = 0;
-    for (let i = 0; i < str.length; i++) {
-      h = (h * 31 + str.charCodeAt(i)) >>> 0;
-    }
+    for (let i = 0; i < str.length; i++) h = (h * 31 + str.charCodeAt(i)) >>> 0;
     const n = (h % 9000) + 1000; // 1000-9999
     return String(n);
   }
-
   function nextLocalTicket() {
     const key = "kiosk_ticket_counter";
     const cur = Number(localStorage.getItem(key) || "1000");
     const next = cur + 1;
     localStorage.setItem(key, String(next));
     return String(next).padStart(4, "0");
+  }
+
+  // ====== Video widget injection (only once) ======
+  function ensureTrueEngageLoaded(){
+    const existing = document.getElementById("trueengageWidgetScript");
+    if (existing) return;
+    const s = document.createElement("script");
+    s.id = "trueengageWidgetScript";
+    s.async = true;
+    s.src = TRUEENGAGE_WIDGET_SRC;
+    s.onload = () => { $("videoHint").textContent = "Widget loaded."; };
+    s.onerror = () => { $("videoHint").textContent = "Failed to load widget script."; };
+    document.body.appendChild(s);
+  }
+
+  // ====== Polling logic: trigger video when status == Waiting For Customer ======
+  let pollTimer = null;
+  let currentWorkItemId = null;
+
+  function stopPolling(){
+    if (pollTimer) clearInterval(pollTimer);
+    pollTimer = null;
+  }
+
+  function startPolling(apiBase, token, workItemId){
+    stopPolling();
+    currentWorkItemId = workItemId;
+
+    const triggerName = () => ($("statusTrigger") ? $("statusTrigger").value.trim() : "Waiting For Customer");
+
+    pollTimer = setInterval(async () => {
+      try {
+        const wi = await getWorkItem(apiBase, token, workItemId);
+
+        // Many responses include statusCategory + status (object). We prefer a readable name:
+        const statusName =
+          (wi.status && (wi.status.name || wi.status.displayName || wi.status.id)) ||
+          wi.statusCategory ||
+          "(unknown)";
+
+        $("wLastStatus").textContent = String(statusName);
+        $("waitStatusText").textContent = `Polling… last status: ${statusName}`;
+
+        setDebug({ step: "Polling", workItemId, statusName, rawStatus: wi.status, statusCategory: wi.statusCategory });
+
+        // IMPORTANT: Compare on the "name/displayName" if available; fallback to category.
+        // You requested: status = "Waiting For Customer"
+        const trig = triggerName();
+        const match =
+          (wi.status && (wi.status.name === trig || wi.status.displayName === trig)) ||
+          (typeof statusName === "string" && statusName === trig);
+
+        if (match) {
+          stopPolling();
+          ensureTrueEngageLoaded();
+          $("videoHint").textContent = "Loading widget…";
+          showScreen("screenVideo");
+        }
+      } catch (e) {
+        // Keep polling for demo, but show error
+        const msg = String(e && e.message ? e.message : e);
+        $("waitStatusText").textContent = "Polling error (see debug)…";
+        setDebug({ pollError: msg, workItemId });
+      }
+    }, POLL_INTERVAL_MS);
   }
 
   // ====== Kiosk state ======
@@ -550,18 +710,15 @@
   function updatePhoneDisplay() {
     $("phoneDisplay").textContent = phoneDigits.length ? phoneDigits : "—";
   }
-
   function addDigit(d) {
-    if (phoneDigits.length >= 15) return; // basic cap
+    if (phoneDigits.length >= 15) return;
     phoneDigits += d;
     updatePhoneDisplay();
   }
-
   function backspaceDigit() {
     phoneDigits = phoneDigits.slice(0, -1);
     updatePhoneDisplay();
   }
-
   function clearDigits() {
     phoneDigits = "";
     updatePhoneDisplay();
@@ -599,7 +756,6 @@
       date_time_datetime: new Date().toISOString()
     };
 
-    // Using the top-level IDs (the shape we want for direct /workitems)
     const payload = {
       typeId: typeId,
       workbinId: workbinId,
@@ -610,7 +766,7 @@
 
     setDebug({ step: "Submitting work item", endpoint: apiBase + "/api/v2/taskmanagement/workitems", payload });
 
-    // optimistic UI
+    // Ticket UI
     $("ticketNumber").textContent = "—";
     $("ticketMsg").textContent = "Submitting…";
     $("tReq").textContent = selectedRequest;
@@ -622,7 +778,6 @@
     try {
       const result = await createWorkItem(apiBase, tokenNow, payload);
 
-      // Ticket number: use hash of work item id if present, else local counter
       const wid = result && result.id ? String(result.id) : "";
       const ticket = wid ? hashTo4Digits(wid) : nextLocalTicket();
 
@@ -631,6 +786,20 @@
       setStatus("ok", "Authenticated");
       setDebug({ response: result, ticketNumber: ticket });
 
+      // NEW: After submit, go to waiting screen + start polling status
+      if (!wid) {
+        alert("Work item created but no ID was returned; polling cannot start.");
+        return;
+      }
+      $("wReq").textContent = selectedRequest;
+      $("wPhone").textContent = phoneDigits;
+      $("wWorkItemId").textContent = wid;
+      $("wLastStatus").textContent = "—";
+      $("waitStatusText").textContent = "Polling work item status…";
+      showScreen("screenWaiting");
+
+      startPolling(apiBase, tokenNow, wid);
+
     } catch (e) {
       const msg = String(e && e.message ? e.message : e);
       $("ticketNumber").textContent = "—";
@@ -638,7 +807,6 @@
       setStatus("bad", "Failed");
       setDebug(msg);
       alert(msg);
-      // optional: go back to phone screen so they can retry
       showScreen("screenPhone");
     }
   }
@@ -676,7 +844,6 @@
           setStatus("ok", "Authenticated");
         }
       }
-      // clear fragment
       history.replaceState(null, document.title, window.location.pathname + window.location.search);
     }
 
@@ -689,17 +856,37 @@
     $("loginBtn").addEventListener("click", () => login());
     $("logoutBtn").addEventListener("click", () => {
       clearToken();
+      stopPolling();
       setStatus("bad", "Not authenticated");
       alert("Logged out.");
+      showScreen("screenRequest");
     });
 
     $("toggleConfigBtn").addEventListener("click", toggleConfig);
     $("toggleConfigBtn2").addEventListener("click", toggleConfig);
     $("toggleConfigBtn3").addEventListener("click", toggleConfig);
+    $("toggleConfigBtn4").addEventListener("click", toggleConfig);
+    $("toggleConfigBtn5").addEventListener("click", toggleConfig);
 
     $("backToRequestBtn").addEventListener("click", () => showScreen("screenRequest"));
 
     $("newTicketBtn").addEventListener("click", () => {
+      selectedRequest = null;
+      phoneDigits = "";
+      showScreen("screenRequest");
+    });
+
+    $("cancelWaitBtn").addEventListener("click", () => {
+      stopPolling();
+      alert("Cancelled.");
+      selectedRequest = null;
+      phoneDigits = "";
+      showScreen("screenRequest");
+    });
+
+    $("endVideoBtn").addEventListener("click", () => {
+      // For demo, we just return to start. You can optionally stop/cleanup widget if vendor supports it.
+      stopPolling();
       selectedRequest = null;
       phoneDigits = "";
       showScreen("screenRequest");
