@@ -79,7 +79,7 @@
     pre{
       margin:10px 0 0; padding:12px; border-radius:16px;
       border:1px solid rgba(255,255,255,.10); background:rgba(3,7,18,.35);
-      color:var(--muted); font-size:12px; overflow:auto; max-height:340px;
+      color:var(--muted); font-size:12px; overflow:auto; max-height:380px;
       white-space:pre-wrap; word-break:break-word;
     }
     .note{
@@ -87,6 +87,17 @@
       border:1px solid rgba(255,255,255,.10); background:rgba(255,255,255,.04);
       color:var(--muted); font-size:12px; line-height:1.35;
     }
+    .pill{
+      display:inline-flex; gap:8px; align-items:center;
+      border:1px solid rgba(255,255,255,.10);
+      background:rgba(255,255,255,.06);
+      padding:8px 10px; border-radius:999px; font-size:12px;
+      color:var(--muted);
+      margin-top:10px;
+    }
+    .miniDot{ width:8px; height:8px; border-radius:50%; background:rgba(167,179,199,.7); }
+    .pill.ok .miniDot{ background:rgba(34,197,94,.9); }
+    .pill.bad .miniDot{ background:rgba(239,68,68,.9); }
     code{background:rgba(0,0,0,.18); padding:2px 6px; border-radius:10px; border:1px solid rgba(255,255,255,.08);}
   </style>
 </head>
@@ -110,6 +121,8 @@
           Click <b>Login</b> first (Implicit Grant). After authentication, submit a request to create a Work Item.
         </p>
 
+        <div id="jsBadge" class="pill"><span class="miniDot"></span><span>JS not loaded</span></div>
+
         <div class="row" style="margin-top:12px;">
           <button class="btn primary" id="loginBtn" type="button">Login</button>
           <button class="btn danger" id="logoutBtn" type="button">Logout</button>
@@ -117,8 +130,7 @@
 
         <div class="note">
           <b>Setup reminder:</b> Your OAuth client must allow <code>Implicit</code> grant and must include this page URL as an authorized
-          <code>redirect_uri</code>. After login, the token is returned in the URL fragment (<code>#access_token=...</code>), saved into
-          <code>sessionStorage</code>, and then removed from the address bar.
+          <code>redirect_uri</code>.
         </div>
 
         <label for="phone">Phone number</label>
@@ -170,14 +182,22 @@
             <label for="workItemType">Work Item Type (work_item_type_text)</label>
             <input id="workItemType" value="Kiosk" />
           </div>
+          <div style="flex:1;min-width:240px;">
+            <label for="forcePrompt">Login Prompt</label>
+            <select id="forcePrompt">
+              <option value="">(default)</option>
+              <option value="login">prompt=login</option>
+              <option value="none">prompt=none</option>
+            </select>
+          </div>
         </div>
 
         <details class="note" style="margin-top:12px;">
           <summary style="cursor:pointer;"><b>Advanced:</b> OAuth settings used by this page</summary>
           <div style="margin-top:8px;">
-            <div><b>CLIENT_ID</b> is set in the script below.</div>
-            <div><b>REDIRECT_URI</b> used: <code id="redirPreview"></code></div>
-            <div><b>Authorize URL</b>: <code>https://login.mypurecloud.jp/oauth/authorize</code></div>
+            <div><b>CLIENT_ID</b>: <code id="clientPreview"></code></div>
+            <div><b>REDIRECT_URI</b>: <code id="redirPreview"></code></div>
+            <div><b>Authorize base</b>: <code id="authBasePreview"></code></div>
           </div>
         </details>
       </section>
@@ -204,19 +224,27 @@
   </div>
 
 <script>
+  // Make errors impossible to miss
+  window.onerror = function(message, source, lineno, colno) {
+    alert(`JS error: ${message}\n${source}:${lineno}:${colno}`);
+  };
+  window.onunhandledrejection = function(e) {
+    alert(`Unhandled rejection: ${String(e.reason)}`);
+  };
+
   /**
    * ====== CONFIGURE THESE ======
    * - CLIENT_ID must be an OAuth client configured for Implicit grant.
    * - In the OAuth client, add REDIRECT_URI exactly as an authorized redirect URI.
    */
   const CLIENT_ID = "5ad8dc1d-2ee1-41dd-9771-1c0e58f22203";
-  const ENVIRONMENT = "mypurecloud.jp"; // region domain
-  const REDIRECT_URI = window.location.origin + window.location.pathname; // single-page demo redirect
+  const ENVIRONMENT = "mypurecloud.jp";
+  const REDIRECT_URI = window.location.origin + window.location.pathname;
 
   // ====== Helpers ======
   const $ = (id) => document.getElementById(id);
 
-  function sanitizePhone(raw){ return (raw || "").replace(/[^0-9+\\s]/g, ""); }
+  function sanitizePhone(raw){ return (raw || "").replace(/[^0-9+\s]/g, ""); }
 
   function setStatus(state, text){
     const dot = $("dot");
@@ -230,15 +258,11 @@
     $("debug").textContent = typeof obj === "string" ? obj : JSON.stringify(obj, null, 2);
   }
 
-  function parseHashParams() {
+  function parseFragment() {
     const hash = window.location.hash.startsWith("#") ? window.location.hash.slice(1) : window.location.hash;
     const params = new URLSearchParams(hash);
-    return {
-      accessToken: params.get("access_token"),
-      tokenType: params.get("token_type"),
-      expiresIn: params.get("expires_in"),
-      raw: hash
-    };
+    // Implicit grant returns #access_token=... OR #error=...
+    return Object.fromEntries(params.entries());
   }
 
   function saveToken(token, expiresInSeconds) {
@@ -251,7 +275,7 @@
     const token = sessionStorage.getItem("gc_access_token");
     const exp = Number(sessionStorage.getItem("gc_expires_at") || "0");
     if (!token) return null;
-    if (exp && Date.now() > exp - 30_000) return null; // 30s buffer
+    if (exp && Date.now() > exp - 30_000) return null;
     return token;
   }
 
@@ -260,27 +284,46 @@
     sessionStorage.removeItem("gc_expires_at");
   }
 
-  // ====== Implicit Login ======
+  function randomState() {
+    return Math.random().toString(16).slice(2) + Math.random().toString(16).slice(2);
+  }
+
+  // ====== OAuth (Implicit) ======
+  function authorizeBase() {
+    return `https://login.${ENVIRONMENT}/oauth/authorize`;
+  }
+
   function buildAuthorizeUrl() {
-    const authorizeUrl = `https://login.${ENVIRONMENT}/oauth/authorize`;
-    const u = new URL(authorizeUrl);
+    const u = new URL(authorizeBase());
     u.searchParams.set("response_type", "token");
     u.searchParams.set("client_id", CLIENT_ID);
     u.searchParams.set("redirect_uri", REDIRECT_URI);
+
+    // Helpful, sometimes required in strict clients
+    const st = randomState();
+    sessionStorage.setItem("gc_oauth_state", st);
+    u.searchParams.set("state", st);
+
+    const prompt = $("forcePrompt") ? $("forcePrompt").value : "";
+    if (prompt) u.searchParams.set("prompt", prompt);
+
     return u.toString();
   }
 
   function login() {
-    if (!CLIENT_ID || CLIENT_ID.includes("PASTE_")) {
-      alert("Please set CLIENT_ID in the script section first.");
+    if (!CLIENT_ID) {
+      alert("CLIENT_ID is empty.");
       return;
     }
-    window.location.assign(buildAuthorizeUrl());
+    const url = buildAuthorizeUrl();
+    setDebug({ step: "Redirecting to authorize URL", url });
+    // Use href to avoid silent failures in some embedded contexts
+    window.location.href = url;
   }
 
-  // ====== Work Item API call ======
+  // ====== API call ======
   async function createWorkItem(apiBase, token, payload){
-    const url = apiBase.replace(/\\/$/, "") + "/api/v2/taskmanagement/workitems";
+    const url = apiBase.replace(/\/$/, "") + "/api/v2/taskmanagement/workitems";
     const res = await fetch(url, {
       method: "POST",
       headers: {
@@ -301,22 +344,45 @@
     return data;
   }
 
-  // ====== Wire UI ======
   document.addEventListener("DOMContentLoaded", () => {
-    $("redirPreview").textContent = REDIRECT_URI;
+    // prove JS loaded
+    const badge = $("jsBadge");
+    badge.classList.add("ok");
+    badge.innerHTML = `<span class="miniDot"></span><span>JS loaded ✅</span>`;
 
-    // Handle token returned in URL fragment after login
-    const { accessToken, tokenType, expiresIn, raw } = parseHashParams();
-    if (accessToken && (tokenType || "").toLowerCase() === "bearer") {
-      saveToken(accessToken, expiresIn);
-      // Clean URL fragment so token isn't left in the address bar
-      history.replaceState(null, document.title, window.location.pathname + window.location.search);
-      setDebug({ message: "Token received via implicit grant", expiresIn, note: "Saved in sessionStorage and URL fragment cleared." });
-    } else if (raw && raw.includes("error=")) {
-      setDebug({ message: "OAuth error returned in URL fragment", raw });
+    $("clientPreview").textContent = CLIENT_ID;
+    $("redirPreview").textContent = REDIRECT_URI;
+    $("authBasePreview").textContent = authorizeBase();
+
+    // Handle OAuth callback fragment
+    const frag = parseFragment();
+    if (Object.keys(frag).length > 0) {
+      setDebug({ step: "OAuth callback fragment detected", fragment: frag });
+
+      if (frag.error) {
+        setStatus("bad", "Auth error");
+        $("msg").textContent = `OAuth error: ${frag.error}${frag.error_description ? " - " + frag.error_description : ""}`;
+        // clear fragment
+        history.replaceState(null, document.title, window.location.pathname + window.location.search);
+      } else if (frag.access_token && (frag.token_type || "").toLowerCase() === "bearer") {
+        // Optional: validate state if returned
+        const expected = sessionStorage.getItem("gc_oauth_state");
+        if (frag.state && expected && frag.state !== expected) {
+          setStatus("bad", "Auth error");
+          $("msg").textContent = "OAuth state mismatch (possible blocked/old redirect).";
+          setDebug({ error: "state_mismatch", expected, got: frag.state });
+        } else {
+          saveToken(frag.access_token, frag.expires_in || "0");
+          setStatus("ok", "Authenticated");
+          $("msg").textContent = "Authenticated. You can submit a request.";
+          setDebug({ step: "Token stored", expires_in: frag.expires_in });
+        }
+        // clear fragment so token isn't left in the address bar
+        history.replaceState(null, document.title, window.location.pathname + window.location.search);
+      }
     }
 
-    // Update auth status
+    // Update auth status on load (if previously logged in)
     const token = getTokenFromStorage();
     if (token) {
       setStatus("ok", "Authenticated");
@@ -334,8 +400,8 @@
       clearToken();
       setStatus("bad", "Not authenticated");
       $("msg").textContent = "Logged out. Click Login again.";
-      setDebug("Logged out (sessionStorage cleared).");
       $("ticket").textContent = "—";
+      setDebug("Logged out (sessionStorage cleared).");
     });
 
     $("clear").addEventListener("click", () => {
@@ -370,9 +436,8 @@
         const workItemType = $("workItemType").value.trim();
 
         if (!apiBase) throw new Error("Missing API base URL.");
-        if (!phone || phone.replace(/\\s/g,"").length < 6) throw new Error("Invalid phone number.");
+        if (!phone || phone.replace(/\s/g,"").length < 6) throw new Error("Invalid phone number.");
 
-        // CustomFields must match your schema (datetime requires .sssZ)
         const customFieldsObj = {
           customer_phone_number_text: phone,
           work_item_location_text: location,
@@ -381,7 +446,7 @@
           date_time_datetime: new Date().toISOString()
         };
 
-        // IMPORTANT: Native API shape for workitems (NOT TypeId/QueueId/WorkbinId)
+        // Create payload using top-level IDs (common contract)
         const payload = {
           typeId: typeId,
           workbinId: workbinId,
@@ -391,7 +456,7 @@
         };
 
         $("msg").textContent = "Submitting…";
-        setDebug({ step: "Submitting work item", payload });
+        setDebug({ step: "Submitting work item", endpoint: apiBase + "/api/v2/taskmanagement/workitems", payload });
 
         $("tReq").textContent = request;
         $("tPhone").textContent = phone;
