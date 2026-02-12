@@ -383,9 +383,9 @@
 
         // IMPORTANT: Native API shape for workitems (NOT TypeId/QueueId/WorkbinId)
         const payload = {
-          workbin: { id: workbinId },
-          type: { id: typeId },
-          queue: { id: queueId },
+          typeId: typeId,
+          workbinId: workbinId,
+          queueId: queueId,
           name: request,
           customFields: customFieldsObj
         };
