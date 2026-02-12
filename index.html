@@ -80,6 +80,8 @@
       margin:10px 0 0; padding:12px; border-radius:16px;
       border:1px solid rgba(255,255,255,.10); background:rgba(3,7,18,.35);
       color:var(--muted); font-size:12px; overflow:auto; max-height:260px;
+      white-space:pre-wrap;
+      word-break:break-word;
     }
   </style>
 </head>
@@ -129,10 +131,10 @@
         <h3 style="margin:18px 0 6px;font-size:16px;">Genesys Cloud Config</h3>
 
         <label for="loginBase">Login Base URL (for /oauth/token)</label>
-        <input id="loginBase" placeholder="https://login.mypurecloud.com" />
+        <input id="loginBase" value="https://login.mypurecloud.jp" />
 
         <label for="apiBase">API Base URL (for /api/v2/...)</label>
-        <input id="apiBase" placeholder="https://api.mypurecloud.com" />
+        <input id="apiBase" value="https://api.mypurecloud.jp" />
 
         <div class="row">
           <div style="flex:1;min-width:240px;">
@@ -194,7 +196,8 @@
           <div><b>Created</b><br><span id="tCreated">—</span></div>
         </div>
 
-        <pre id="debug" style="display:block;">(debug output)</pre>
+        <h3 style="margin:16px 0 6px;font-size:14px;">Debug output</h3>
+        <pre id="debug">(debug output)</pre>
       </aside>
     </main>
   </div>
@@ -276,98 +279,4 @@
     $("tPhone").textContent = "—";
     $("tBranch").textContent = "—";
     $("tCreated").textContent = "—";
-    $("debug").textContent = "(debug output)";
-    setStatus(null, "Idle");
-  });
-
-  $("phone").addEventListener("input", () => {
-    $("phone").value = sanitizePhone($("phone").value);
-  });
-
-  $("submit").addEventListener("click", async () => {
-    try {
-      setStatus(null, "Working...");
-      $("msg").textContent = "Requesting token and submitting…";
-
-      const loginBase = $("loginBase").value.trim();
-      const apiBase = $("apiBase").value.trim();
-      const clientId = $("clientId").value.trim();
-      const clientSecret = $("clientSecret").value.trim();
-
-      const phone = sanitizePhone($("phone").value.trim());
-      const request = $("request").value;
-
-      const workbinId = $("workbinId").value.trim();
-      const queueId = $("queueId").value.trim();
-      const typeId = $("typeId").value.trim();
-      const location = $("location").value.trim();
-      const workItemType = $("workItemType").value.trim();
-      const integrationId = $("integrationId").value.trim();
-
-      if (!loginBase || !apiBase || !clientId || !clientSecret){
-        setStatus("bad", "Missing config");
-        $("msg").textContent = "Please fill in login/api base URLs, client id, and client secret.";
-        return;
-      }
-      if (!phone || phone.replace(/\s/g,"").length < 6){
-        setStatus("bad", "Invalid phone");
-        $("msg").textContent = "Please enter a valid phone number.";
-        return;
-      }
-
-      // CustomFields object → string (matches your sample pattern)
-      const customFieldsObj = {
-        customer_phone_number_text: phone,
-        work_item_location_text: location,
-        work_item_task_text: request,
-        work_item_type_text: workItemType,
-        date_time_datetime: new Date().toISOString() // must be .sssZ
-      };
-      const customFieldsStr = JSON.stringify(customFieldsObj);
-
-      const payload = {
-        TypeId: typeId,
-        WorkbinId: workbinId,
-        QueueId: queueId,
-        Name: request,
-        CustomFields: customFieldsStr,
-        rawRequest: JSON.stringify({
-          WorkbinId: workbinId,
-          TypeId: typeId,
-          QueueId: queueId,
-          Name: request,
-          CustomFields: customFieldsStr
-        })
-      };
-      if (integrationId) payload.integrationId = integrationId;
-
-      // UI preview
-      $("tReq").textContent = request;
-      $("tPhone").textContent = phone;
-      $("tBranch").textContent = location;
-      $("tCreated").textContent = new Date().toLocaleString();
-
-      // 1) Get token
-      const token = await getToken(loginBase, clientId, clientSecret);
-
-      // 2) Create work item
-      const result = await createWorkItem(apiBase, token, payload);
-
-      // Ticket number: use work item id if present
-      const wid = result && result.id ? result.id : null;
-      $("ticket").textContent = wid ? wid.slice(0, 8).toUpperCase() : "OK";
-      $("msg").textContent = wid ? `Submitted. Work Item ID: ${wid}` : "Submitted.";
-      $("debug").textContent = JSON.stringify({ payloadSent: payload, response: result }, null, 2);
-
-      setStatus("ok", "Submitted");
-    } catch (e) {
-      setStatus("bad", "Failed");
-      $("msg").textContent = "Failed to submit. See debug output.";
-      $("debug").textContent = String(e && e.message ? e.message : e);
-    }
-  });
-
-  setStatus(null, "Idle");
-</script>
-</body>
-</html>
+    $("debug").textContent = "(debug output)"
