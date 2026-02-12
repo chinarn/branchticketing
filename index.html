@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Branch Queue Kiosk (Direct OAuth Demo)</title>
+  <title>Branch Queue Kiosk (Implicit Grant Demo)</title>
   <style>
     :root{
       --bg:#0b1220; --panel:#121a2c; --text:#e6edf6; --muted:#a7b3c7;
@@ -20,7 +20,7 @@
       min-height:100vh; display:flex; align-items:center; justify-content:center; padding:24px;
     }
     .wrap{
-      width:min(980px,100%); border-radius:calc(var(--radius) + 8px);
+      width:min(1020px,100%); border-radius:calc(var(--radius) + 8px);
       border:1px solid rgba(255,255,255,.08);
       background:linear-gradient(180deg, rgba(255,255,255,.04), rgba(255,255,255,.02));
       box-shadow:var(--shadow); overflow:hidden;
@@ -29,6 +29,7 @@
       display:flex; justify-content:space-between; align-items:center;
       padding:18px 22px; background:rgba(18,26,44,.75);
       border-bottom:1px solid rgba(255,255,255,.08);
+      gap:12px;
     }
     header h1{margin:0; font-size:18px}
     header p{margin:4px 0 0; font-size:12px; color:var(--muted)}
@@ -37,7 +38,7 @@
     .dot.ok{background:rgba(34,197,94,.9)}
     .dot.bad{background:rgba(239,68,68,.9)}
     main{display:grid; grid-template-columns:1.1fr .9fr; gap:16px; padding:18px}
-    @media (max-width:900px){ main{grid-template-columns:1fr} }
+    @media (max-width:980px){ main{grid-template-columns:1fr} }
     .panel{
       background:rgba(18,26,44,.65);
       border:1px solid rgba(255,255,255,.08);
@@ -54,16 +55,15 @@
     .btn{
       cursor:pointer; border-radius:16px; padding:12px 14px;
       border:1px solid rgba(255,255,255,.12);
-      background:rgba(255,255,255,.06); color:var(--text); font-weight:700;
+      background:rgba(255,255,255,.06); color:var(--text); font-weight:800;
     }
     .btn.primary{
       background:linear-gradient(135deg, rgba(56,189,248,.95), rgba(34,197,94,.82));
       color:#06121f; border:none;
     }
-    .warn{
-      margin-top:10px; padding:10px 12px; border-radius:16px;
-      border:1px solid rgba(239,68,68,.25); background:rgba(239,68,68,.10);
-      color:var(--muted); font-size:12px; line-height:1.35;
+    .btn.danger{
+      border-color: rgba(239,68,68,.25);
+      background: rgba(239,68,68,.10);
     }
     .ticketNum{font-size:54px; font-weight:900; letter-spacing:2px; margin:8px 0}
     .kv{display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-top:8px}
@@ -75,19 +75,15 @@
     pre{
       margin:10px 0 0; padding:12px; border-radius:16px;
       border:1px solid rgba(255,255,255,.10); background:rgba(3,7,18,.35);
-      color:var(--muted); font-size:12px; overflow:auto; max-height:260px;
+      color:var(--muted); font-size:12px; overflow:auto; max-height:320px;
       white-space:pre-wrap; word-break:break-word;
     }
-    .badge{
-      display:inline-flex; gap:8px; align-items:center;
-      border:1px solid rgba(255,255,255,.10);
-      background:rgba(255,255,255,.06);
-      padding:8px 10px; border-radius:999px; font-size:12px;
-      color:var(--muted);
-      margin-top:10px;
+    .note{
+      margin-top:10px; padding:10px 12px; border-radius:16px;
+      border:1px solid rgba(255,255,255,.10); background:rgba(255,255,255,.04);
+      color:var(--muted); font-size:12px; line-height:1.35;
     }
-    .badge .miniDot{ width:8px; height:8px; border-radius:50%; background:rgba(167,179,199,.7); }
-    .badge.ok .miniDot{ background:rgba(34,197,94,.9); }
+    code{background:rgba(0,0,0,.18); padding:2px 6px; border-radius:10px; border:1px solid rgba(255,255,255,.08);}
   </style>
 </head>
 <body>
@@ -95,11 +91,11 @@
     <header>
       <div>
         <h1>Branch Queue Kiosk</h1>
-        <p>Direct OAuth demo (Client Credentials) → Create Genesys Work Item</p>
+        <p>Implicit Grant demo → Create Genesys Cloud Work Item</p>
       </div>
       <div class="status">
         <span id="dot" class="dot"></span>
-        <span id="status">Idle</span>
+        <span id="status">Not authenticated</span>
       </div>
     </header>
 
@@ -107,10 +103,18 @@
       <section class="panel">
         <h2 style="margin:0 0 6px;font-size:20px;">Customer Input</h2>
         <p style="margin:0;color:var(--muted);font-size:13px;">
-          Enter phone number and request type, then submit.
+          This demo uses <b>Implicit Grant</b>. Click <b>Login</b> first, then submit a request.
         </p>
 
-        <div id="jsBadge" class="badge"><span class="miniDot"></span><span>JS not loaded</span></div>
+        <div class="row" style="margin-top:12px;">
+          <button class="btn primary" id="loginBtn" type="button">Login</button>
+          <button class="btn danger" id="logoutBtn" type="button">Logout</button>
+        </div>
+
+        <div class="note">
+          <b>Setup:</b> In your OAuth client, set Grant Type to <code>Implicit</code> and add this page URL as an authorized <code>redirect_uri</code>.
+          Token comes back in the URL fragment (after <code>#</code>). :contentReference[oaicite:3]{index=3}
+        </div>
 
         <label for="phone">Phone number</label>
         <input id="phone" placeholder="e.g., 0123456789" inputmode="numeric" />
@@ -129,30 +133,10 @@
           <button class="btn" id="clear" type="button">Clear</button>
         </div>
 
-        <div class="warn">
-          <b>Important:</b> This page requests an OAuth token in the browser using <b>Client Credentials</b>.
-          Do <b>not</b> use this approach for a real public kiosk. Use a backend/proxy to keep the client secret safe.
-          Also, browser requests may fail due to <b>CORS</b>.
-        </div>
+        <h3 style="margin:18px 0 6px;font-size:16px;">Work Item Config (your demo values)</h3>
 
-        <h3 style="margin:18px 0 6px;font-size:16px;">Genesys Cloud Config</h3>
-
-        <label for="loginBase">Login Base URL (for /oauth/token)</label>
-        <input id="loginBase" value="https://login.mypurecloud.jp" />
-
-        <label for="apiBase">API Base URL (for /api/v2/...)</label>
+        <label for="apiBase">API Base URL</label>
         <input id="apiBase" value="https://api.mypurecloud.jp" />
-
-        <div class="row">
-          <div style="flex:1;min-width:240px;">
-            <label for="clientId">OAuth Client ID</label>
-            <input id="clientId" placeholder="client_id" />
-          </div>
-          <div style="flex:1;min-width:240px;">
-            <label for="clientSecret">OAuth Client Secret</label>
-            <input id="clientSecret" placeholder="client_secret" />
-          </div>
-        </div>
 
         <div class="row">
           <div style="flex:1;min-width:240px;">
@@ -181,17 +165,21 @@
             <label for="workItemType">Work Item Type (work_item_type_text)</label>
             <input id="workItemType" value="Kiosk" />
           </div>
-          <div style="flex:1;min-width:240px;">
-            <label for="integrationId">integrationId (optional)</label>
-            <input id="integrationId" value="3202dd02-bd14-4bab-85e7-ad8402881e4a" />
-          </div>
         </div>
+
+        <details class="note" style="margin-top:12px;">
+          <summary style="cursor:pointer;"><b>Advanced:</b> OAuth settings (edit these in the script)</summary>
+          <div style="margin-top:8px;">
+            <div>Set <code>CLIENT_ID</code> and <code>REDIRECT_URI</code> in the script section.</div>
+            <div>Authorization endpoint is <code>https://login.mypurecloud.jp/oauth/authorize</code>. :contentReference[oaicite:4]{index=4}</div>
+          </div>
+        </details>
       </section>
 
       <aside class="panel" aria-live="polite">
         <h2 style="margin:0 0 6px;font-size:20px;">Queue Ticket</h2>
         <p id="msg" style="margin:0;color:var(--muted);font-size:13px;">
-          Waiting for submission.
+          Login first, then submit.
         </p>
 
         <div class="ticketNum" id="ticket">—</div>
@@ -210,116 +198,158 @@
   </div>
 
 <script>
-  // Make errors impossible to miss
-  window.onerror = function(message, source, lineno, colno) {
-    alert(`JS error: ${message}\n${source}:${lineno}:${colno}`);
-  };
-  window.onunhandledrejection = function(e) {
-    alert(`Unhandled rejection: ${e.reason}`);
-  };
+  /**
+   * ====== CONFIGURE THESE ======
+   * 1) Create an OAuth client (Implicit grant) and copy its Client ID here.
+   * 2) Add your page URL as an authorized redirect URI in that OAuth client.
+   *    REDIRECT_URI must match exactly.
+   */
+  const CLIENT_ID = "PASTE_YOUR_OAUTH_CLIENT_ID_HERE";
+  const REDIRECT_URI = window.location.origin + window.location.pathname; // typical for single-page demo
+  const ENVIRONMENT = "mypurecloud.jp"; // region
 
+  // ====== Helpers ======
+  const $ = (id) => document.getElementById(id);
+  function sanitizePhone(raw){ return (raw || "").replace(/[^0-9+\s]/g, ""); }
+
+  function setStatus(state, text){
+    const dot = $("dot");
+    dot.classList.remove("ok","bad");
+    if (state === "ok") dot.classList.add("ok");
+    if (state === "bad") dot.classList.add("bad");
+    $("status").textContent = text;
+  }
+
+  function setDebug(obj){
+    $("debug").textContent = typeof obj === "string" ? obj : JSON.stringify(obj, null, 2);
+  }
+
+  function parseHashParams() {
+    // Implicit grant returns params in URL fragment (#access_token=...&token_type=...&expires_in=...)
+    const hash = window.location.hash.startsWith("#") ? window.location.hash.slice(1) : window.location.hash;
+    const params = new URLSearchParams(hash);
+    const accessToken = params.get("access_token");
+    const tokenType = params.get("token_type");
+    const expiresIn = params.get("expires_in");
+    return { accessToken, tokenType, expiresIn, raw: hash };
+  }
+
+  function saveToken(token, expiresInSeconds) {
+    const expiresAt = Date.now() + (Number(expiresInSeconds || "0") * 1000);
+    sessionStorage.setItem("gc_access_token", token);
+    sessionStorage.setItem("gc_expires_at", String(expiresAt));
+  }
+
+  function getTokenFromStorage() {
+    const token = sessionStorage.getItem("gc_access_token");
+    const exp = Number(sessionStorage.getItem("gc_expires_at") || "0");
+    if (!token) return null;
+    if (exp && Date.now() > exp - 30_000) return null; // 30s buffer
+    return token;
+  }
+
+  function clearToken() {
+    sessionStorage.removeItem("gc_access_token");
+    sessionStorage.removeItem("gc_expires_at");
+  }
+
+  // ====== Implicit Login ======
+  function buildAuthorizeUrl() {
+    const authorizeUrl = `https://login.${ENVIRONMENT}/oauth/authorize`;
+    const u = new URL(authorizeUrl);
+    u.searchParams.set("response_type", "token");   // implicit flow
+    u.searchParams.set("client_id", CLIENT_ID);
+    u.searchParams.set("redirect_uri", REDIRECT_URI);
+    return u.toString();
+  }
+
+  function login() {
+    if (!CLIENT_ID || CLIENT_ID.includes("PASTE_")) {
+      alert("Please set CLIENT_ID in the script section first.");
+      return;
+    }
+    window.location.assign(buildAuthorizeUrl());
+  }
+
+  // ====== Work Item API call ======
+  async function createWorkItem(apiBase, token, payload){
+    const url = apiBase.replace(/\/$/, "") + "/api/v2/taskmanagement/workitems";
+    const res = await fetch(url, {
+      method: "POST",
+      headers: {
+        "Authorization": `Bearer ${token}`,
+        "Content-Type": "application/json",
+        "Accept": "application/json"
+      },
+      body: JSON.stringify(payload)
+    });
+
+    const text = await res.text();
+    let data;
+    try { data = text ? JSON.parse(text) : {}; } catch { data = { raw: text }; }
+
+    if (!res.ok){
+      throw new Error(`Create work item failed (${res.status}): ${JSON.stringify(data)}`);
+    }
+    return data;
+  }
+
+  // ====== Wire UI ======
   document.addEventListener("DOMContentLoaded", () => {
-    const $ = (id) => document.getElementById(id);
-
-    function setStatus(state, text){
-      const dot = $("dot");
-      dot.classList.remove("ok","bad");
-      if (state === "ok") dot.classList.add("ok");
-      if (state === "bad") dot.classList.add("bad");
-      $("status").textContent = text;
+    // Handle token returned in URL fragment after login
+    const { accessToken, tokenType, expiresIn, raw } = parseHashParams();
+    if (accessToken && (tokenType || "").toLowerCase() === "bearer") {
+      saveToken(accessToken, expiresIn);
+      // Clean URL fragment so token isn't left in the address bar
+      history.replaceState(null, document.title, window.location.pathname + window.location.search);
+      setDebug({ message: "Token received via implicit grant", expiresIn, note: "Saved in sessionStorage and URL fragment cleared." });
+    } else if (raw && raw.includes("error=")) {
+      setDebug({ message: "OAuth error returned in URL fragment", raw });
     }
 
-    function sanitizePhone(raw){
-      return (raw || "").replace(/[^0-9+\s]/g, "");
+    // Update auth status
+    const token = getTokenFromStorage();
+    if (token) {
+      setStatus("ok", "Authenticated");
+      $("msg").textContent = "Authenticated. You can submit a request.";
+    } else {
+      setStatus("bad", "Not authenticated");
+      $("msg").textContent = "Click Login first.";
     }
 
-    async function getToken(loginBase, clientId, clientSecret){
-      const tokenUrl = loginBase.replace(/\/$/, "") + "/oauth/token";
+    $("phone").addEventListener("input", () => $("phone").value = sanitizePhone($("phone").value));
 
-      // Basic auth header (btoa requires non-unicode; client id/secret are typically ASCII)
-      const basic = btoa(`${clientId}:${clientSecret}`);
-
-      const body = new URLSearchParams();
-      body.set("grant_type", "client_credentials");
-
-      const res = await fetch(tokenUrl, {
-        method: "POST",
-        headers: {
-          "Authorization": `Basic ${basic}`,
-          "Content-Type": "application/x-www-form-urlencoded"
-        },
-        body
-      });
-
-      const text = await res.text();
-      let data;
-      try { data = text ? JSON.parse(text) : {}; } catch { data = { raw: text }; }
-
-      if (!res.ok){
-        throw new Error(`Token failed (${res.status}): ${JSON.stringify(data)}`);
-      }
-      if (!data.access_token){
-        throw new Error(`Token response missing access_token: ${JSON.stringify(data)}`);
-      }
-      return data.access_token;
-    }
-
-    async function createWorkItem(apiBase, token, payload){
-      const url = apiBase.replace(/\/$/, "") + "/api/v2/taskmanagement/workitems";
-      const res = await fetch(url, {
-        method: "POST",
-        headers: {
-          "Authorization": `Bearer ${token}`,
-          "Content-Type": "application/json",
-          "Accept": "application/json"
-        },
-        body: JSON.stringify(payload)
-      });
-
-      const text = await res.text();
-      let data;
-      try { data = text ? JSON.parse(text) : {}; } catch { data = { raw: text }; }
-
-      if (!res.ok){
-        throw new Error(`Create work item failed (${res.status}): ${JSON.stringify(data)}`);
-      }
-      return data;
-    }
-
-    // Prove JS loaded
-    const badge = $("jsBadge");
-    badge.classList.add("ok");
-    badge.innerHTML = `<span class="miniDot"></span><span>JS loaded ✅</span>`;
-
-    // Wire UI
-    $("phone").addEventListener("input", () => {
-      $("phone").value = sanitizePhone($("phone").value);
+    $("loginBtn").addEventListener("click", () => login());
+    $("logoutBtn").addEventListener("click", () => {
+      clearToken();
+      setStatus("bad", "Not authenticated");
+      $("msg").textContent = "Logged out. Click Login again.";
+      setDebug("Logged out (sessionStorage cleared).");
+      $("ticket").textContent = "—";
     });
 
     $("clear").addEventListener("click", () => {
       $("phone").value = "";
       $("request").value = "Credit Card Replacement";
       $("ticket").textContent = "—";
-      $("msg").textContent = "Waiting for submission.";
       $("tReq").textContent = "—";
       $("tPhone").textContent = "—";
       $("tBranch").textContent = "—";
       $("tCreated").textContent = "—";
-      $("debug").textContent = "(debug output)";
-      setStatus(null, "Idle");
+      $("msg").textContent = getTokenFromStorage() ? "Ready." : "Click Login first.";
+      setDebug("(debug output)");
     });
 
     $("submit").addEventListener("click", async () => {
       try {
-        setStatus(null, "Working...");
-        $("msg").textContent = "Requesting token and submitting…";
-        $("debug").textContent = "Clicked. Starting…";
+        const tokenNow = getTokenFromStorage();
+        if (!tokenNow) {
+          alert("Not authenticated. Click Login first.");
+          setStatus("bad", "Not authenticated");
+          return;
+        }
 
-        const loginBase = $("loginBase").value.trim();
         const apiBase = $("apiBase").value.trim();
-        const clientId = $("clientId").value.trim();
-        const clientSecret = $("clientSecret").value.trim();
-
         const phone = sanitizePhone($("phone").value.trim());
         const request = $("request").value;
 
@@ -328,23 +358,11 @@
         const typeId = $("typeId").value.trim();
         const location = $("location").value.trim();
         const workItemType = $("workItemType").value.trim();
-        const integrationId = $("integrationId").value.trim();
 
-        if (!loginBase || !apiBase || !clientId || !clientSecret){
-          setStatus("bad", "Missing config");
-          $("msg").textContent = "Please fill in login/api base URLs, client id, and client secret.";
-          $("debug").textContent = "Missing required configuration fields.";
-          alert("Missing configuration: login/api base URLs, client id, or client secret.");
-          return;
-        }
-        if (!phone || phone.replace(/\s/g,"").length < 6){
-          setStatus("bad", "Invalid phone");
-          $("msg").textContent = "Please enter a valid phone number.";
-          $("debug").textContent = "Invalid phone number.";
-          alert("Please enter a valid phone number.");
-          return;
-        }
+        if (!apiBase) throw new Error("Missing API base URL.");
+        if (!phone || phone.replace(/\s/g,"").length < 6) throw new Error("Invalid phone number.");
 
+        // CustomFields must match your work item schema types (datetime requires .sssZ)
         const customFieldsObj = {
           customer_phone_number_text: phone,
           work_item_location_text: location,
@@ -352,56 +370,39 @@
           work_item_type_text: workItemType,
           date_time_datetime: new Date().toISOString()
         };
-        const customFieldsStr = JSON.stringify(customFieldsObj);
 
         const payload = {
           TypeId: typeId,
           WorkbinId: workbinId,
           QueueId: queueId,
           Name: request,
-          CustomFields: customFieldsStr,
-          rawRequest: JSON.stringify({
-            WorkbinId: workbinId,
-            TypeId: typeId,
-            QueueId: queueId,
-            Name: request,
-            CustomFields: customFieldsStr
-          })
+          CustomFields: JSON.stringify(customFieldsObj)
         };
-        if (integrationId) payload.integrationId = integrationId;
+
+        $("msg").textContent = "Submitting…";
+        setDebug({ step: "Submitting work item", payload });
 
         $("tReq").textContent = request;
         $("tPhone").textContent = phone;
         $("tBranch").textContent = location;
         $("tCreated").textContent = new Date().toLocaleString();
 
-        $("debug").textContent = "Requesting OAuth token…";
-        const token = await getToken(loginBase, clientId, clientSecret);
-
-        $("debug").textContent = "Creating work item…";
-        const result = await createWorkItem(apiBase, token, payload);
+        const result = await createWorkItem(apiBase, tokenNow, payload);
 
         const wid = result && result.id ? result.id : null;
         $("ticket").textContent = wid ? wid.slice(0, 8).toUpperCase() : "OK";
         $("msg").textContent = wid ? `Submitted. Work Item ID: ${wid}` : "Submitted.";
-
-        $("debug").textContent = JSON.stringify(
-          { tokenReceived: true, payloadSent: payload, response: result },
-          null,
-          2
-        );
-
         setStatus("ok", "Submitted");
+        setDebug({ response: result });
+
       } catch (e) {
         const msg = String(e && e.message ? e.message : e);
+        $("msg").textContent = "Failed. See debug.";
         setStatus("bad", "Failed");
-        $("msg").textContent = "Failed to submit. Error shown below.";
-        $("debug").textContent = msg;
+        setDebug(msg);
         alert(msg);
       }
     });
-
-    setStatus(null, "Idle");
   });
 </script>
 </body>
