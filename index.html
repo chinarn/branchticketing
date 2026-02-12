@@ -372,11 +372,11 @@
         };
 
         const payload = {
-          TypeId: typeId,
-          WorkbinId: workbinId,
-          QueueId: queueId,
-          Name: request,
-          CustomFields: JSON.stringify(customFieldsObj)
+          workbin: { id: workbinId },
+          type: { id: typeId },
+          queue: { id: queueId },
+          name: request,
+          customFields: customFieldsObj
         };
 
         $("msg").textContent = "Submitting…";
