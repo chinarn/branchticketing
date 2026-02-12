@@ -7,7 +7,7 @@
   <style>
     :root{
       --bg:#0b1220; --panel:#121a2c; --text:#e6edf6; --muted:#a7b3c7;
-      --ok:#22c55e; --bad:#ef4444; --radius:20px;
+      --ok:#22c55e; --bad:#ef4444; --radius:22px;
       --shadow:0 18px 50px rgba(0,0,0,.45);
       --font: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial;
     }
@@ -17,10 +17,10 @@
       background: radial-gradient(1100px 600px at 50% 10%, rgba(56,189,248,.14), transparent 55%),
                   radial-gradient(900px 500px at 20% 90%, rgba(34,197,94,.10), transparent 55%),
                   var(--bg);
-      min-height:100vh; display:flex; align-items:center; justify-content:center; padding:24px;
+      min-height:100vh; display:flex; align-items:center; justify-content:center; padding:22px;
     }
     .wrap{
-      width:min(1020px,100%); border-radius:calc(var(--radius) + 8px);
+      width:min(1100px,100%); border-radius:calc(var(--radius) + 10px);
       border:1px solid rgba(255,255,255,.08);
       background:linear-gradient(180deg, rgba(255,255,255,.04), rgba(255,255,255,.02));
       box-shadow:var(--shadow); overflow:hidden;
@@ -37,29 +37,35 @@
     .dot{width:9px;height:9px;border-radius:50%;background:rgba(167,179,199,.6)}
     .dot.ok{background:rgba(34,197,94,.9)}
     .dot.bad{background:rgba(239,68,68,.9)}
-    main{display:grid; grid-template-columns:1.1fr .9fr; gap:16px; padding:18px}
-    @media (max-width:980px){ main{grid-template-columns:1fr} }
+
+    main{display:grid; grid-template-columns:1fr 380px; gap:16px; padding:18px}
+    @media (max-width:1000px){ main{grid-template-columns:1fr} }
+
     .panel{
       background:rgba(18,26,44,.65);
       border:1px solid rgba(255,255,255,.08);
       border-radius:var(--radius);
       padding:16px;
     }
-    label{display:block; font-size:13px; color:var(--muted); margin:10px 0 8px}
-    input, select{
-      width:100%; padding:12px 12px; border-radius:16px;
-      border:1px solid rgba(255,255,255,.12);
-      background:rgba(3,7,18,.35); color:var(--text); outline:none;
+
+    /* Kiosk flow screens */
+    .screen{
+      min-height:520px;
+      display:flex;
+      flex-direction:column;
+      justify-content:space-between;
+      gap:14px;
+      padding:10px;
     }
-    input:focus, select:focus{
-      border-color:rgba(56,189,248,.55);
-      box-shadow:0 0 0 5px rgba(56,189,248,.12);
-    }
-    .row{display:flex; gap:10px; flex-wrap:wrap}
+    .screenTop h2{margin:0;font-size:24px}
+    .screenTop p{margin:6px 0 0; color:var(--muted); font-size:14px; line-height:1.35}
+    .actionsRow{display:flex; gap:12px; flex-wrap:wrap; justify-content:flex-end}
+
     .btn{
-      cursor:pointer; border-radius:16px; padding:12px 14px;
+      cursor:pointer; border-radius:18px; padding:14px 16px;
       border:1px solid rgba(255,255,255,.12);
-      background:rgba(255,255,255,.06); color:var(--text); font-weight:800;
+      background:rgba(255,255,255,.06); color:var(--text); font-weight:900;
+      font-size:15px;
     }
     .btn.primary{
       background:linear-gradient(135deg, rgba(56,189,248,.95), rgba(34,197,94,.82));
@@ -69,23 +75,119 @@
       border-color: rgba(239,68,68,.25);
       background: rgba(239,68,68,.10);
     }
-    .ticketNum{font-size:54px; font-weight:900; letter-spacing:2px; margin:8px 0}
-    .kv{display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-top:8px}
-    .kv div{
+    .btn.big{
+      padding:16px 18px;
+      font-size:16px;
+      border-radius:20px;
+    }
+
+    .gridReq{
+      display:grid;
+      grid-template-columns:repeat(2, minmax(0, 1fr));
+      gap:12px;
+      margin-top:8px;
+    }
+    @media (max-width:600px){ .gridReq{grid-template-columns:1fr} }
+    .reqCard{
+      border:1px solid rgba(255,255,255,.10);
+      background:rgba(3,7,18,.32);
+      border-radius:22px;
+      padding:16px;
+      cursor:pointer;
+      transition:transform .05s ease;
+      min-height:86px;
+      display:flex; align-items:center; justify-content:space-between;
+    }
+    .reqCard:active{ transform:scale(.99); }
+    .reqCard strong{font-size:16px}
+    .reqCard span{color:var(--muted); font-size:12px}
+
+    /* Keypad */
+    .phoneBox{
+      border:1px solid rgba(255,255,255,.10);
+      background:rgba(3,7,18,.30);
+      border-radius:22px;
+      padding:16px;
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:14px;
+    }
+    .phoneValue{
+      font-size:34px;
+      font-weight:900;
+      letter-spacing:2px;
+      word-break:break-all;
+    }
+    .phoneHint{color:var(--muted); font-size:12px; margin-top:6px}
+    .kbd{
+      display:grid;
+      grid-template-columns:repeat(3, 1fr);
+      gap:12px;
+      margin-top:12px;
+    }
+    .key{
+      border-radius:22px;
+      padding:18px 0;
+      text-align:center;
+      border:1px solid rgba(255,255,255,.12);
+      background:rgba(255,255,255,.06);
+      font-size:22px;
+      font-weight:900;
+      user-select:none;
+      cursor:pointer;
+    }
+    .key:active{ transform:scale(.99); }
+    .key.wide{ grid-column: span 2; }
+    .key.ok{
+      background:linear-gradient(135deg, rgba(56,189,248,.95), rgba(34,197,94,.82));
+      color:#06121f;
+      border:none;
+    }
+    .key.back{
+      border-color: rgba(255,255,255,.18);
+      background: rgba(255,255,255,.04);
+    }
+    .key.clear{
+      border-color: rgba(239,68,68,.25);
+      background: rgba(239,68,68,.10);
+    }
+
+    /* Ticket screen */
+    .ticketBig{
+      font-size:84px;
+      font-weight:1000;
+      letter-spacing:6px;
+      text-align:center;
+      margin:6px 0 0;
+    }
+    .ticketSub{
+      text-align:center;
+      color:var(--muted);
+      margin:6px 0 0;
+    }
+    .ticketMeta{
+      margin-top:14px;
+      display:grid;
+      grid-template-columns:1fr 1fr;
+      gap:10px;
+    }
+    .ticketMeta div{
       border:1px solid rgba(255,255,255,.08); background:rgba(0,0,0,.15);
-      border-radius:14px; padding:10px 12px; color:var(--muted); font-size:13px;
+      border-radius:18px; padding:10px 12px; color:var(--muted); font-size:13px;
     }
-    .kv b{color:var(--text)}
-    pre{
-      margin:10px 0 0; padding:12px; border-radius:16px;
-      border:1px solid rgba(255,255,255,.10); background:rgba(3,7,18,.35);
-      color:var(--muted); font-size:12px; overflow:auto; max-height:380px;
-      white-space:pre-wrap; word-break:break-word;
+    .ticketMeta b{color:var(--text)}
+
+    /* Right panel (debug/config) */
+    label{display:block; font-size:13px; color:var(--muted); margin:10px 0 8px}
+    input, select{
+      width:100%; padding:11px 12px; border-radius:16px;
+      border:1px solid rgba(255,255,255,.12);
+      background:rgba(3,7,18,.35); color:var(--text); outline:none;
     }
-    .note{
-      margin-top:10px; padding:10px 12px; border-radius:16px;
-      border:1px solid rgba(255,255,255,.10); background:rgba(255,255,255,.04);
-      color:var(--muted); font-size:12px; line-height:1.35;
+    input:focus, select:focus{
+      border-color:rgba(56,189,248,.55);
+      box-shadow:0 0 0 5px rgba(56,189,248,.12);
     }
     .pill{
       display:inline-flex; gap:8px; align-items:center;
@@ -98,7 +200,19 @@
     .miniDot{ width:8px; height:8px; border-radius:50%; background:rgba(167,179,199,.7); }
     .pill.ok .miniDot{ background:rgba(34,197,94,.9); }
     .pill.bad .miniDot{ background:rgba(239,68,68,.9); }
-    code{background:rgba(0,0,0,.18); padding:2px 6px; border-radius:10px; border:1px solid rgba(255,255,255,.08);}
+
+    details.note{
+      margin-top:10px; padding:10px 12px; border-radius:18px;
+      border:1px solid rgba(255,255,255,.10); background:rgba(255,255,255,.04);
+      color:var(--muted); font-size:12px; line-height:1.35;
+    }
+    pre{
+      margin:10px 0 0; padding:12px; border-radius:18px;
+      border:1px solid rgba(255,255,255,.10); background:rgba(3,7,18,.35);
+      color:var(--muted); font-size:12px; overflow:auto; max-height:260px;
+      white-space:pre-wrap; word-break:break-word;
+    }
+    .hidden{ display:none !important; }
   </style>
 </head>
 <body>
@@ -106,7 +220,7 @@
     <header>
       <div>
         <h1>Branch Queue Kiosk</h1>
-        <p>Implicit Grant demo → Create Genesys Cloud Work Item</p>
+        <p>Step flow: Request → Phone keypad → Submit → Ticket number</p>
       </div>
       <div class="status">
         <span id="dot" class="dot"></span>
@@ -115,116 +229,167 @@
     </header>
 
     <main>
+      <!-- LEFT: Kiosk UI -->
       <section class="panel">
-        <h2 style="margin:0 0 6px;font-size:20px;">Customer Input</h2>
+        <div id="screenRequest" class="screen">
+          <div class="screenTop">
+            <h2>Select your request</h2>
+            <p>Please choose the service you need.</p>
+            <div id="authBadge" class="pill"><span class="miniDot"></span><span>Auth: Not authenticated</span></div>
+            <div class="actionsRow" style="justify-content:flex-start;margin-top:10px;">
+              <button class="btn primary" id="loginBtn" type="button">Login</button>
+              <button class="btn danger" id="logoutBtn" type="button">Logout</button>
+            </div>
+          </div>
+
+          <div class="gridReq" id="reqGrid">
+            <!-- populated by JS -->
+          </div>
+
+          <div class="actionsRow">
+            <button class="btn" id="toggleConfigBtn" type="button">Show/Hide Config</button>
+          </div>
+        </div>
+
+        <div id="screenPhone" class="screen hidden">
+          <div class="screenTop">
+            <h2>Enter your phone number</h2>
+            <p>Use the keypad below. Then press <b>OK</b>.</p>
+          </div>
+
+          <div>
+            <div class="phoneBox">
+              <div style="flex:1;">
+                <div class="phoneValue" id="phoneDisplay">—</div>
+                <div class="phoneHint" id="phoneHint">Request: —</div>
+              </div>
+              <button class="btn danger big" id="backToRequestBtn" type="button">Back</button>
+            </div>
+
+            <div class="kbd" aria-label="Phone keypad">
+              <div class="key" data-key="1">1</div>
+              <div class="key" data-key="2">2</div>
+              <div class="key" data-key="3">3</div>
+              <div class="key" data-key="4">4</div>
+              <div class="key" data-key="5">5</div>
+              <div class="key" data-key="6">6</div>
+              <div class="key" data-key="7">7</div>
+              <div class="key" data-key="8">8</div>
+              <div class="key" data-key="9">9</div>
+              <div class="key clear" data-action="clear">Clear</div>
+              <div class="key" data-key="0">0</div>
+              <div class="key back" data-action="back">⌫</div>
+              <div class="key ok wide" data-action="ok">OK</div>
+            </div>
+          </div>
+
+          <div class="actionsRow">
+            <button class="btn" id="toggleConfigBtn2" type="button">Show/Hide Config</button>
+          </div>
+        </div>
+
+        <div id="screenTicket" class="screen hidden">
+          <div class="screenTop">
+            <h2>Your queue number</h2>
+            <p>Please keep this number and wait for your turn.</p>
+          </div>
+
+          <div>
+            <div class="ticketBig" id="ticketNumber">—</div>
+            <div class="ticketSub" id="ticketMsg">—</div>
+
+            <div class="ticketMeta">
+              <div><b>Request</b><br><span id="tReq">—</span></div>
+              <div><b>Phone</b><br><span id="tPhone">—</span></div>
+              <div><b>Branch</b><br><span id="tBranch">—</span></div>
+              <div><b>Created</b><br><span id="tCreated">—</span></div>
+            </div>
+          </div>
+
+          <div class="actionsRow">
+            <button class="btn primary big" id="newTicketBtn" type="button">Done</button>
+            <button class="btn" id="toggleConfigBtn3" type="button">Show/Hide Config</button>
+          </div>
+        </div>
+      </section>
+
+      <!-- RIGHT: Config / Debug (hide during demo) -->
+      <aside class="panel" id="configPanel">
+        <h2 style="margin:0 0 6px;font-size:18px;">Config & Debug</h2>
         <p style="margin:0;color:var(--muted);font-size:13px;">
-          Click <b>Login</b> first (Implicit Grant). After authentication, submit a request to create a Work Item.
+          You can hide this panel during the demo.
         </p>
 
         <div id="jsBadge" class="pill"><span class="miniDot"></span><span>JS not loaded</span></div>
 
-        <div class="row" style="margin-top:12px;">
-          <button class="btn primary" id="loginBtn" type="button">Login</button>
-          <button class="btn danger" id="logoutBtn" type="button">Logout</button>
-        </div>
-
-        <div class="note">
-          <b>Setup reminder:</b> Your OAuth client must allow <code>Implicit</code> grant and must include this page URL as an authorized
-          <code>redirect_uri</code>.
-        </div>
-
-        <label for="phone">Phone number</label>
-        <input id="phone" placeholder="e.g., 0123456789" inputmode="numeric" />
-
-        <label for="request">Request</label>
-        <select id="request">
-          <option>Credit Card Replacement</option>
-          <option>Opening Account</option>
-          <option>Closing Account</option>
-          <option>Withdrawl</option>
-          <option>Others</option>
-        </select>
-
-        <div class="row" style="margin-top:14px;">
-          <button class="btn primary" id="submit" type="button">Get Queue Number</button>
-          <button class="btn" id="clear" type="button">Clear</button>
-        </div>
-
-        <h3 style="margin:18px 0 6px;font-size:16px;">Work Item Config</h3>
-
-        <label for="apiBase">API Base URL</label>
-        <input id="apiBase" value="https://api.mypurecloud.jp" />
-
-        <div class="row">
-          <div style="flex:1;min-width:240px;">
-            <label for="workbinId">WorkbinId</label>
-            <input id="workbinId" value="0f2ebe3f-790b-4db9-89a9-5f1197279c66" />
-          </div>
-          <div style="flex:1;min-width:240px;">
-            <label for="queueId">QueueId</label>
-            <input id="queueId" value="39a09c43-4d7c-4ca8-8ebb-ee5e9a300eec" />
-          </div>
-        </div>
-
-        <div class="row">
-          <div style="flex:1;min-width:240px;">
-            <label for="typeId">TypeId (Worktype)</label>
-            <input id="typeId" value="65a3b4fd-5131-47ca-ac06-7d2b496e171d" />
-          </div>
-          <div style="flex:1;min-width:240px;">
-            <label for="location">Branch Location (work_item_location_text)</label>
-            <input id="location" value="SS17" />
-          </div>
-        </div>
-
-        <div class="row">
-          <div style="flex:1;min-width:240px;">
-            <label for="workItemType">Work Item Type (work_item_type_text)</label>
-            <input id="workItemType" value="Kiosk" />
-          </div>
-          <div style="flex:1;min-width:240px;">
-            <label for="forcePrompt">Login Prompt</label>
-            <select id="forcePrompt">
-              <option value="">(default)</option>
-              <option value="login">prompt=login</option>
-              <option value="none">prompt=none</option>
-            </select>
-          </div>
-        </div>
-
-        <details class="note" style="margin-top:12px;">
-          <summary style="cursor:pointer;"><b>Advanced:</b> OAuth settings used by this page</summary>
+        <details class="note" open>
+          <summary style="cursor:pointer;"><b>OAuth (Implicit)</b></summary>
           <div style="margin-top:8px;">
-            <div><b>CLIENT_ID</b>: <code id="clientPreview"></code></div>
-            <div><b>REDIRECT_URI</b>: <code id="redirPreview"></code></div>
-            <div><b>Authorize base</b>: <code id="authBasePreview"></code></div>
+            <div><b>Client ID</b>: <code id="clientPreview"></code></div>
+            <div><b>Redirect URI</b>: <code id="redirPreview"></code></div>
+            <div><b>Authorize Base</b>: <code id="authBasePreview"></code></div>
           </div>
+
+          <label for="forcePrompt">Login Prompt</label>
+          <select id="forcePrompt">
+            <option value="">(default)</option>
+            <option value="login">prompt=login</option>
+            <option value="none">prompt=none</option>
+          </select>
         </details>
-      </section>
 
-      <aside class="panel" aria-live="polite">
-        <h2 style="margin:0 0 6px;font-size:20px;">Queue Ticket</h2>
-        <p id="msg" style="margin:0;color:var(--muted);font-size:13px;">
-          Login first, then submit.
-        </p>
+        <details class="note" open>
+          <summary style="cursor:pointer;"><b>Work Item Inputs</b></summary>
 
-        <div class="ticketNum" id="ticket">—</div>
+          <label for="apiBase">API Base URL</label>
+          <input id="apiBase" value="https://api.mypurecloud.jp" />
 
-        <div class="kv">
-          <div><b>Request</b><br><span id="tReq">—</span></div>
-          <div><b>Phone</b><br><span id="tPhone">—</span></div>
-          <div><b>Branch</b><br><span id="tBranch">—</span></div>
-          <div><b>Created</b><br><span id="tCreated">—</span></div>
-        </div>
+          <label for="workbinId">WorkbinId</label>
+          <input id="workbinId" value="0f2ebe3f-790b-4db9-89a9-5f1197279c66" />
 
-        <h3 style="margin:16px 0 6px;font-size:14px;">Debug output</h3>
+          <label for="queueId">QueueId</label>
+          <input id="queueId" value="39a09c43-4d7c-4ca8-8ebb-ee5e9a300eec" />
+
+          <label for="typeId">TypeId (Worktype)</label>
+          <input id="typeId" value="65a3b4fd-5131-47ca-ac06-7d2b496e171d" />
+
+          <label for="location">Branch Location (work_item_location_text)</label>
+          <input id="location" value="SS17" />
+
+          <label for="workItemType">Work Item Type (work_item_type_text)</label>
+          <input id="workItemType" value="Kiosk" />
+        </details>
+
+        <details class="note">
+          <summary style="cursor:pointer;"><b>Ticket number style</b></summary>
+          <p style="margin:8px 0 0;">
+            Demo ticket shown is <b>4 digits</b>. If the API returns an ID, we hash it into a stable 4-digit value.
+            Otherwise we increment a local counter.
+          </p>
+        </details>
+
+        <h3 style="margin:14px 0 6px;font-size:14px;">Debug output</h3>
         <pre id="debug">(debug output)</pre>
       </aside>
     </main>
   </div>
 
 <script>
-  // Make errors impossible to miss
+  // ====== CONFIGURE THESE ======
+  const CLIENT_ID = "5ad8dc1d-2ee1-41dd-9771-1c0e58f22203";
+  const ENVIRONMENT = "mypurecloud.jp";
+  const REDIRECT_URI = window.location.origin + window.location.pathname;
+
+  // ====== Requests in kiosk menu ======
+  const REQUEST_OPTIONS = [
+    { label: "Credit Card Replacement", hint: "Replace an existing credit card" },
+    { label: "Opening Account", hint: "Open a new account" },
+    { label: "Closing Account", hint: "Close an existing account" },
+    { label: "Withdrawl", hint: "Cash withdrawal / teller service" },
+    { label: "Others", hint: "General assistance" }
+  ];
+
+  // ====== Errors visible ======
   window.onerror = function(message, source, lineno, colno) {
     alert(`JS error: ${message}\n${source}:${lineno}:${colno}`);
   };
@@ -232,19 +397,8 @@
     alert(`Unhandled rejection: ${String(e.reason)}`);
   };
 
-  /**
-   * ====== CONFIGURE THESE ======
-   * - CLIENT_ID must be an OAuth client configured for Implicit grant.
-   * - In the OAuth client, add REDIRECT_URI exactly as an authorized redirect URI.
-   */
-  const CLIENT_ID = "5ad8dc1d-2ee1-41dd-9771-1c0e58f22203";
-  const ENVIRONMENT = "mypurecloud.jp";
-  const REDIRECT_URI = window.location.origin + window.location.pathname;
-
   // ====== Helpers ======
   const $ = (id) => document.getElementById(id);
-
-  function sanitizePhone(raw){ return (raw || "").replace(/[^0-9+\s]/g, ""); }
 
   function setStatus(state, text){
     const dot = $("dot");
@@ -252,16 +406,32 @@
     if (state === "ok") dot.classList.add("ok");
     if (state === "bad") dot.classList.add("bad");
     $("status").textContent = text;
+
+    const badge = $("authBadge");
+    badge.classList.remove("ok","bad");
+    if (state === "ok") badge.classList.add("ok");
+    if (state === "bad") badge.classList.add("bad");
+    badge.innerHTML = `<span class="miniDot"></span><span>Auth: ${text}</span>`;
   }
 
   function setDebug(obj){
     $("debug").textContent = typeof obj === "string" ? obj : JSON.stringify(obj, null, 2);
   }
 
+  function showScreen(which){
+    $("screenRequest").classList.add("hidden");
+    $("screenPhone").classList.add("hidden");
+    $("screenTicket").classList.add("hidden");
+    $(which).classList.remove("hidden");
+  }
+
+  function toggleConfig(){
+    $("configPanel").classList.toggle("hidden");
+  }
+
   function parseFragment() {
     const hash = window.location.hash.startsWith("#") ? window.location.hash.slice(1) : window.location.hash;
     const params = new URLSearchParams(hash);
-    // Implicit grant returns #access_token=... OR #error=...
     return Object.fromEntries(params.entries());
   }
 
@@ -288,7 +458,6 @@
     return Math.random().toString(16).slice(2) + Math.random().toString(16).slice(2);
   }
 
-  // ====== OAuth (Implicit) ======
   function authorizeBase() {
     return `https://login.${ENVIRONMENT}/oauth/authorize`;
   }
@@ -299,29 +468,23 @@
     u.searchParams.set("client_id", CLIENT_ID);
     u.searchParams.set("redirect_uri", REDIRECT_URI);
 
-    // Helpful, sometimes required in strict clients
     const st = randomState();
     sessionStorage.setItem("gc_oauth_state", st);
     u.searchParams.set("state", st);
 
-    const prompt = $("forcePrompt") ? $("forcePrompt").value : "";
+    const prompt = $("forcePrompt").value;
     if (prompt) u.searchParams.set("prompt", prompt);
 
     return u.toString();
   }
 
   function login() {
-    if (!CLIENT_ID) {
-      alert("CLIENT_ID is empty.");
-      return;
-    }
     const url = buildAuthorizeUrl();
     setDebug({ step: "Redirecting to authorize URL", url });
-    // Use href to avoid silent failures in some embedded contexts
     window.location.href = url;
   }
 
-  // ====== API call ======
+  // ====== Work Item API call ======
   async function createWorkItem(apiBase, token, payload){
     const url = apiBase.replace(/\/$/, "") + "/api/v2/taskmanagement/workitems";
     const res = await fetch(url, {
@@ -344,141 +507,218 @@
     return data;
   }
 
-  document.addEventListener("DOMContentLoaded", () => {
-    // prove JS loaded
-    const badge = $("jsBadge");
-    badge.classList.add("ok");
-    badge.innerHTML = `<span class="miniDot"></span><span>JS loaded ✅</span>`;
+  // ====== Ticket number: stable 4-digit from id, or local counter fallback ======
+  function hashTo4Digits(str) {
+    let h = 0;
+    for (let i = 0; i < str.length; i++) {
+      h = (h * 31 + str.charCodeAt(i)) >>> 0;
+    }
+    const n = (h % 9000) + 1000; // 1000-9999
+    return String(n);
+  }
 
+  function nextLocalTicket() {
+    const key = "kiosk_ticket_counter";
+    const cur = Number(localStorage.getItem(key) || "1000");
+    const next = cur + 1;
+    localStorage.setItem(key, String(next));
+    return String(next).padStart(4, "0");
+  }
+
+  // ====== Kiosk state ======
+  let selectedRequest = null;
+  let phoneDigits = "";
+
+  function renderRequestGrid() {
+    const grid = $("reqGrid");
+    grid.innerHTML = "";
+    for (const opt of REQUEST_OPTIONS) {
+      const card = document.createElement("div");
+      card.className = "reqCard";
+      card.innerHTML = `<div><strong>${opt.label}</strong><div><span>${opt.hint}</span></div></div><div style="color:var(--muted)">›</div>`;
+      card.addEventListener("click", () => {
+        selectedRequest = opt.label;
+        phoneDigits = "";
+        $("phoneDisplay").textContent = "—";
+        $("phoneHint").textContent = `Request: ${selectedRequest}`;
+        showScreen("screenPhone");
+      });
+      grid.appendChild(card);
+    }
+  }
+
+  function updatePhoneDisplay() {
+    $("phoneDisplay").textContent = phoneDigits.length ? phoneDigits : "—";
+  }
+
+  function addDigit(d) {
+    if (phoneDigits.length >= 15) return; // basic cap
+    phoneDigits += d;
+    updatePhoneDisplay();
+  }
+
+  function backspaceDigit() {
+    phoneDigits = phoneDigits.slice(0, -1);
+    updatePhoneDisplay();
+  }
+
+  function clearDigits() {
+    phoneDigits = "";
+    updatePhoneDisplay();
+  }
+
+  async function submitWorkItemFromKiosk() {
+    const tokenNow = getTokenFromStorage();
+    if (!tokenNow) {
+      alert("Not authenticated. Click Login first.");
+      setStatus("bad", "Not authenticated");
+      return;
+    }
+    if (!selectedRequest) {
+      alert("Please select a request.");
+      showScreen("screenRequest");
+      return;
+    }
+    if (!phoneDigits || phoneDigits.length < 6) {
+      alert("Please enter a valid phone number.");
+      return;
+    }
+
+    const apiBase = $("apiBase").value.trim();
+    const workbinId = $("workbinId").value.trim();
+    const queueId = $("queueId").value.trim();
+    const typeId = $("typeId").value.trim();
+    const location = $("location").value.trim();
+    const workItemType = $("workItemType").value.trim();
+
+    const customFieldsObj = {
+      customer_phone_number_text: phoneDigits,
+      work_item_location_text: location,
+      work_item_task_text: selectedRequest,
+      work_item_type_text: workItemType,
+      date_time_datetime: new Date().toISOString()
+    };
+
+    // Using the top-level IDs (the shape we want for direct /workitems)
+    const payload = {
+      typeId: typeId,
+      workbinId: workbinId,
+      queueId: queueId,
+      name: selectedRequest,
+      customFields: customFieldsObj
+    };
+
+    setDebug({ step: "Submitting work item", endpoint: apiBase + "/api/v2/taskmanagement/workitems", payload });
+
+    // optimistic UI
+    $("ticketNumber").textContent = "—";
+    $("ticketMsg").textContent = "Submitting…";
+    $("tReq").textContent = selectedRequest;
+    $("tPhone").textContent = phoneDigits;
+    $("tBranch").textContent = location;
+    $("tCreated").textContent = new Date().toLocaleString();
+    showScreen("screenTicket");
+
+    try {
+      const result = await createWorkItem(apiBase, tokenNow, payload);
+
+      // Ticket number: use hash of work item id if present, else local counter
+      const wid = result && result.id ? String(result.id) : "";
+      const ticket = wid ? hashTo4Digits(wid) : nextLocalTicket();
+
+      $("ticketNumber").textContent = ticket;
+      $("ticketMsg").textContent = "Thank you. Please wait for your number to be called.";
+      setStatus("ok", "Authenticated");
+      setDebug({ response: result, ticketNumber: ticket });
+
+    } catch (e) {
+      const msg = String(e && e.message ? e.message : e);
+      $("ticketNumber").textContent = "—";
+      $("ticketMsg").textContent = "Submission failed. See debug.";
+      setStatus("bad", "Failed");
+      setDebug(msg);
+      alert(msg);
+      // optional: go back to phone screen so they can retry
+      showScreen("screenPhone");
+    }
+  }
+
+  // ====== Init ======
+  document.addEventListener("DOMContentLoaded", () => {
+    // JS loaded badge
+    const jsBadge = $("jsBadge");
+    jsBadge.classList.add("ok");
+    jsBadge.innerHTML = `<span class="miniDot"></span><span>JS loaded ✅</span>`;
+
+    // Populate advanced preview
     $("clientPreview").textContent = CLIENT_ID;
     $("redirPreview").textContent = REDIRECT_URI;
     $("authBasePreview").textContent = authorizeBase();
 
-    // Handle OAuth callback fragment
+    renderRequestGrid();
+
+    // OAuth callback handling
     const frag = parseFragment();
     if (Object.keys(frag).length > 0) {
       setDebug({ step: "OAuth callback fragment detected", fragment: frag });
 
       if (frag.error) {
         setStatus("bad", "Auth error");
-        $("msg").textContent = `OAuth error: ${frag.error}${frag.error_description ? " - " + frag.error_description : ""}`;
-        // clear fragment
-        history.replaceState(null, document.title, window.location.pathname + window.location.search);
+        alert(`OAuth error: ${frag.error}${frag.error_description ? "\n" + frag.error_description : ""}`);
       } else if (frag.access_token && (frag.token_type || "").toLowerCase() === "bearer") {
-        // Optional: validate state if returned
         const expected = sessionStorage.getItem("gc_oauth_state");
         if (frag.state && expected && frag.state !== expected) {
           setStatus("bad", "Auth error");
-          $("msg").textContent = "OAuth state mismatch (possible blocked/old redirect).";
+          alert("OAuth state mismatch.");
           setDebug({ error: "state_mismatch", expected, got: frag.state });
         } else {
           saveToken(frag.access_token, frag.expires_in || "0");
           setStatus("ok", "Authenticated");
-          $("msg").textContent = "Authenticated. You can submit a request.";
-          setDebug({ step: "Token stored", expires_in: frag.expires_in });
         }
-        // clear fragment so token isn't left in the address bar
-        history.replaceState(null, document.title, window.location.pathname + window.location.search);
       }
+      // clear fragment
+      history.replaceState(null, document.title, window.location.pathname + window.location.search);
     }
 
-    // Update auth status on load (if previously logged in)
+    // Update auth status if token already stored
     const token = getTokenFromStorage();
-    if (token) {
-      setStatus("ok", "Authenticated");
-      $("msg").textContent = "Authenticated. You can submit a request.";
-    } else {
-      setStatus("bad", "Not authenticated");
-      $("msg").textContent = "Click Login first.";
-    }
+    if (token) setStatus("ok", "Authenticated");
+    else setStatus("bad", "Not authenticated");
 
-    $("phone").addEventListener("input", () => $("phone").value = sanitizePhone($("phone").value));
-
+    // Buttons
     $("loginBtn").addEventListener("click", () => login());
-
     $("logoutBtn").addEventListener("click", () => {
       clearToken();
       setStatus("bad", "Not authenticated");
-      $("msg").textContent = "Logged out. Click Login again.";
-      $("ticket").textContent = "—";
-      setDebug("Logged out (sessionStorage cleared).");
+      alert("Logged out.");
     });
 
-    $("clear").addEventListener("click", () => {
-      $("phone").value = "";
-      $("request").value = "Credit Card Replacement";
-      $("ticket").textContent = "—";
-      $("tReq").textContent = "—";
-      $("tPhone").textContent = "—";
-      $("tBranch").textContent = "—";
-      $("tCreated").textContent = "—";
-      $("msg").textContent = getTokenFromStorage() ? "Ready." : "Click Login first.";
-      setDebug("(debug output)");
+    $("toggleConfigBtn").addEventListener("click", toggleConfig);
+    $("toggleConfigBtn2").addEventListener("click", toggleConfig);
+    $("toggleConfigBtn3").addEventListener("click", toggleConfig);
+
+    $("backToRequestBtn").addEventListener("click", () => showScreen("screenRequest"));
+
+    $("newTicketBtn").addEventListener("click", () => {
+      selectedRequest = null;
+      phoneDigits = "";
+      showScreen("screenRequest");
     });
 
-    $("submit").addEventListener("click", async () => {
-      try {
-        const tokenNow = getTokenFromStorage();
-        if (!tokenNow) {
-          alert("Not authenticated. Click Login first.");
-          setStatus("bad", "Not authenticated");
-          return;
-        }
-
-        const apiBase = $("apiBase").value.trim();
-        const phone = sanitizePhone($("phone").value.trim());
-        const request = $("request").value;
-
-        const workbinId = $("workbinId").value.trim();
-        const queueId = $("queueId").value.trim();
-        const typeId = $("typeId").value.trim();
-        const location = $("location").value.trim();
-        const workItemType = $("workItemType").value.trim();
-
-        if (!apiBase) throw new Error("Missing API base URL.");
-        if (!phone || phone.replace(/\s/g,"").length < 6) throw new Error("Invalid phone number.");
-
-        const customFieldsObj = {
-          customer_phone_number_text: phone,
-          work_item_location_text: location,
-          work_item_task_text: request,
-          work_item_type_text: workItemType,
-          date_time_datetime: new Date().toISOString()
-        };
-
-        // Create payload using top-level IDs (common contract)
-        const payload = {
-          typeId: typeId,
-          workbinId: workbinId,
-          queueId: queueId,
-          name: request,
-          customFields: customFieldsObj
-        };
-
-        $("msg").textContent = "Submitting…";
-        setDebug({ step: "Submitting work item", endpoint: apiBase + "/api/v2/taskmanagement/workitems", payload });
-
-        $("tReq").textContent = request;
-        $("tPhone").textContent = phone;
-        $("tBranch").textContent = location;
-        $("tCreated").textContent = new Date().toLocaleString();
-
-        const result = await createWorkItem(apiBase, tokenNow, payload);
-
-        const wid = result && result.id ? result.id : null;
-        $("ticket").textContent = wid ? wid.slice(0, 8).toUpperCase() : "OK";
-        $("msg").textContent = wid ? `Submitted. Work Item ID: ${wid}` : "Submitted.";
-        setStatus("ok", "Submitted");
-        setDebug({ response: result });
-
-      } catch (e) {
-        const msg = String(e && e.message ? e.message : e);
-        $("msg").textContent = "Failed. See debug.";
-        setStatus("bad", "Failed");
-        setDebug(msg);
-        alert(msg);
-      }
+    // Keypad handling
+    document.querySelectorAll(".key").forEach(el => {
+      el.addEventListener("click", async () => {
+        const k = el.getAttribute("data-key");
+        const act = el.getAttribute("data-action");
+        if (k) addDigit(k);
+        else if (act === "back") backspaceDigit();
+        else if (act === "clear") clearDigits();
+        else if (act === "ok") await submitWorkItemFromKiosk();
+      });
     });
+
+    // Start on request screen
+    showScreen("screenRequest");
   });
 </script>
 </body>
