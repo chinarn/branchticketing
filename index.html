@@ -51,6 +51,10 @@
       border:1px solid rgba(255,255,255,.12);
       background:rgba(3,7,18,.35); color:var(--text); outline:none;
     }
+    input:focus, select:focus{
+      border-color:rgba(56,189,248,.55);
+      box-shadow:0 0 0 5px rgba(56,189,248,.12);
+    }
     .row{display:flex; gap:10px; flex-wrap:wrap}
     .btn{
       cursor:pointer; border-radius:16px; padding:12px 14px;
@@ -75,7 +79,7 @@
     pre{
       margin:10px 0 0; padding:12px; border-radius:16px;
       border:1px solid rgba(255,255,255,.10); background:rgba(3,7,18,.35);
-      color:var(--muted); font-size:12px; overflow:auto; max-height:320px;
+      color:var(--muted); font-size:12px; overflow:auto; max-height:340px;
       white-space:pre-wrap; word-break:break-word;
     }
     .note{
@@ -103,7 +107,7 @@
       <section class="panel">
         <h2 style="margin:0 0 6px;font-size:20px;">Customer Input</h2>
         <p style="margin:0;color:var(--muted);font-size:13px;">
-          This demo uses <b>Implicit Grant</b>. Click <b>Login</b> first, then submit a request.
+          Click <b>Login</b> first (Implicit Grant). After authentication, submit a request to create a Work Item.
         </p>
 
         <div class="row" style="margin-top:12px;">
@@ -112,8 +116,9 @@
         </div>
 
         <div class="note">
-          <b>Setup:</b> In your OAuth client, set Grant Type to <code>Implicit</code> and add this page URL as an authorized <code>redirect_uri</code>.
-          Token comes back in the URL fragment (after <code>#</code>). :contentReference[oaicite:3]{index=3}
+          <b>Setup reminder:</b> Your OAuth client must allow <code>Implicit</code> grant and must include this page URL as an authorized
+          <code>redirect_uri</code>. After login, the token is returned in the URL fragment (<code>#access_token=...</code>), saved into
+          <code>sessionStorage</code>, and then removed from the address bar.
         </div>
 
         <label for="phone">Phone number</label>
@@ -133,7 +138,7 @@
           <button class="btn" id="clear" type="button">Clear</button>
         </div>
 
-        <h3 style="margin:18px 0 6px;font-size:16px;">Work Item Config (your demo values)</h3>
+        <h3 style="margin:18px 0 6px;font-size:16px;">Work Item Config</h3>
 
         <label for="apiBase">API Base URL</label>
         <input id="apiBase" value="https://api.mypurecloud.jp" />
@@ -151,7 +156,7 @@
 
         <div class="row">
           <div style="flex:1;min-width:240px;">
-            <label for="typeId">TypeId</label>
+            <label for="typeId">TypeId (Worktype)</label>
             <input id="typeId" value="65a3b4fd-5131-47ca-ac06-7d2b496e171d" />
           </div>
           <div style="flex:1;min-width:240px;">
@@ -168,10 +173,11 @@
         </div>
 
         <details class="note" style="margin-top:12px;">
-          <summary style="cursor:pointer;"><b>Advanced:</b> OAuth settings (edit these in the script)</summary>
+          <summary style="cursor:pointer;"><b>Advanced:</b> OAuth settings used by this page</summary>
           <div style="margin-top:8px;">
-            <div>Set <code>CLIENT_ID</code> and <code>REDIRECT_URI</code> in the script section.</div>
-            <div>Authorization endpoint is <code>https://login.mypurecloud.jp/oauth/authorize</code>. :contentReference[oaicite:4]{index=4}</div>
+            <div><b>CLIENT_ID</b> is set in the script below.</div>
+            <div><b>REDIRECT_URI</b> used: <code id="redirPreview"></code></div>
+            <div><b>Authorize URL</b>: <code>https://login.mypurecloud.jp/oauth/authorize</code></div>
           </div>
         </details>
       </section>
@@ -200,17 +206,17 @@
 <script>
   /**
    * ====== CONFIGURE THESE ======
-   * 1) Create an OAuth client (Implicit grant) and copy its Client ID here.
-   * 2) Add your page URL as an authorized redirect URI in that OAuth client.
-   *    REDIRECT_URI must match exactly.
+   * - CLIENT_ID must be an OAuth client configured for Implicit grant.
+   * - In the OAuth client, add REDIRECT_URI exactly as an authorized redirect URI.
    */
   const CLIENT_ID = "5ad8dc1d-2ee1-41dd-9771-1c0e58f22203";
-  const REDIRECT_URI = window.location.origin + window.location.pathname; // typical for single-page demo
-  const ENVIRONMENT = "mypurecloud.jp"; // region
+  const ENVIRONMENT = "mypurecloud.jp"; // region domain
+  const REDIRECT_URI = window.location.origin + window.location.pathname; // single-page demo redirect
 
   // ====== Helpers ======
   const $ = (id) => document.getElementById(id);
-  function sanitizePhone(raw){ return (raw || "").replace(/[^0-9+\s]/g, ""); }
+
+  function sanitizePhone(raw){ return (raw || "").replace(/[^0-9+\\s]/g, ""); }
 
   function setStatus(state, text){
     const dot = $("dot");
@@ -225,13 +231,14 @@
   }
 
   function parseHashParams() {
-    // Implicit grant returns params in URL fragment (#access_token=...&token_type=...&expires_in=...)
     const hash = window.location.hash.startsWith("#") ? window.location.hash.slice(1) : window.location.hash;
     const params = new URLSearchParams(hash);
-    const accessToken = params.get("access_token");
-    const tokenType = params.get("token_type");
-    const expiresIn = params.get("expires_in");
-    return { accessToken, tokenType, expiresIn, raw: hash };
+    return {
+      accessToken: params.get("access_token"),
+      tokenType: params.get("token_type"),
+      expiresIn: params.get("expires_in"),
+      raw: hash
+    };
   }
 
   function saveToken(token, expiresInSeconds) {
@@ -257,7 +264,7 @@
   function buildAuthorizeUrl() {
     const authorizeUrl = `https://login.${ENVIRONMENT}/oauth/authorize`;
     const u = new URL(authorizeUrl);
-    u.searchParams.set("response_type", "token");   // implicit flow
+    u.searchParams.set("response_type", "token");
     u.searchParams.set("client_id", CLIENT_ID);
     u.searchParams.set("redirect_uri", REDIRECT_URI);
     return u.toString();
@@ -273,7 +280,7 @@
 
   // ====== Work Item API call ======
   async function createWorkItem(apiBase, token, payload){
-    const url = apiBase.replace(/\/$/, "") + "/api/v2/taskmanagement/workitems";
+    const url = apiBase.replace(/\\/$/, "") + "/api/v2/taskmanagement/workitems";
     const res = await fetch(url, {
       method: "POST",
       headers: {
@@ -296,6 +303,8 @@
 
   // ====== Wire UI ======
   document.addEventListener("DOMContentLoaded", () => {
+    $("redirPreview").textContent = REDIRECT_URI;
+
     // Handle token returned in URL fragment after login
     const { accessToken, tokenType, expiresIn, raw } = parseHashParams();
     if (accessToken && (tokenType || "").toLowerCase() === "bearer") {
@@ -320,6 +329,7 @@
     $("phone").addEventListener("input", () => $("phone").value = sanitizePhone($("phone").value));
 
     $("loginBtn").addEventListener("click", () => login());
+
     $("logoutBtn").addEventListener("click", () => {
       clearToken();
       setStatus("bad", "Not authenticated");
@@ -360,9 +370,9 @@
         const workItemType = $("workItemType").value.trim();
 
         if (!apiBase) throw new Error("Missing API base URL.");
-        if (!phone || phone.replace(/\s/g,"").length < 6) throw new Error("Invalid phone number.");
+        if (!phone || phone.replace(/\\s/g,"").length < 6) throw new Error("Invalid phone number.");
 
-        // CustomFields must match your work item schema types (datetime requires .sssZ)
+        // CustomFields must match your schema (datetime requires .sssZ)
         const customFieldsObj = {
           customer_phone_number_text: phone,
           work_item_location_text: location,
@@ -371,6 +381,7 @@
           date_time_datetime: new Date().toISOString()
         };
 
+        // IMPORTANT: Native API shape for workitems (NOT TypeId/QueueId/WorkbinId)
         const payload = {
           workbin: { id: workbinId },
           type: { id: typeId },
