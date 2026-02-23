@@ -253,7 +253,7 @@
     <header>
       <div>
         <h1>Branch Queue Kiosk</h1>
-        <p>Step flow: Request → Phone keypad → Submit → Ticket → Wait → Video on assignmentState=Connected</p>
+        <p>Step flow: Segment → Request → Phone keypad → Submit → Ticket → Wait → Video on assignmentState=Connected</p>
       </div>
       <div class="status">
         <span id="dot" class="dot"></span>
@@ -264,10 +264,12 @@
     <main>
       <!-- LEFT: Kiosk UI -->
       <section class="panel">
-        <div id="screenRequest" class="screen">
+
+        <!-- NEW: Segment selection screen -->
+        <div id="screenSegment" class="screen">
           <div class="screenTop">
-            <h2>Select your request</h2>
-            <p>Please choose the service you need.</p>
+            <h2>Select customer segment</h2>
+            <p>Please choose your segment before selecting a request.</p>
             <div id="authBadge" class="pill"><span class="miniDot"></span><span>Auth: Not authenticated</span></div>
             <div class="actionsRow" style="justify-content:flex-start;margin-top:10px;">
               <button class="btn primary" id="loginBtn" type="button">Login</button>
@@ -275,9 +277,25 @@
             </div>
           </div>
 
+          <div class="gridReq" id="segGrid"></div>
+
+          <div class="actionsRow">
+            <button class="btn" id="toggleConfigBtnSeg" type="button">Show/Hide Config</button>
+          </div>
+        </div>
+
+        <!-- Request screen (now after segment) -->
+        <div id="screenRequest" class="screen hidden">
+          <div class="screenTop">
+            <h2>Select your request</h2>
+            <p>Please choose the service you need.</p>
+            <div id="segBadge" class="pill"><span class="miniDot"></span><span>Segment: —</span></div>
+          </div>
+
           <div class="gridReq" id="reqGrid"></div>
 
           <div class="actionsRow">
+            <button class="btn danger" id="backToSegmentBtn" type="button">Back</button>
             <button class="btn" id="toggleConfigBtn" type="button">Show/Hide Config</button>
           </div>
         </div>
@@ -319,7 +337,7 @@
           </div>
         </div>
 
-        <!-- Ticket screen shows the 4-digit queue number, then we go to Waiting screen but KEEP the big number there too -->
+        <!-- Ticket screen -->
         <div id="screenTicket" class="screen hidden">
           <div class="screenTop">
             <h2>Your queue number</h2>
@@ -331,9 +349,11 @@
             <div class="ticketSub" id="ticketMsg">—</div>
 
             <div class="ticketMeta">
+              <div><b>Segment</b><br><span id="tSeg">—</span></div>
               <div><b>Request</b><br><span id="tReq">—</span></div>
               <div><b>Phone</b><br><span id="tPhone">—</span></div>
               <div><b>Branch</b><br><span id="tBranch">—</span></div>
+              <div><b>Worktype ID</b><br><span id="tTypeId">—</span></div>
               <div><b>Created</b><br><span id="tCreated">—</span></div>
             </div>
           </div>
@@ -344,7 +364,7 @@
           </div>
         </div>
 
-        <!-- Waiting screen (NO polling text). Keep showing big 4-digit ticket. -->
+        <!-- Waiting screen -->
         <div id="screenWaiting" class="screen hidden">
           <div class="screenTop">
             <h2>Please wait</h2>
@@ -357,8 +377,10 @@
             <div class="waitPulse" aria-hidden="true"><div class="spinner"></div></div>
 
             <div class="ticketMeta">
+              <div><b>Segment</b><br><span id="wSeg">—</span></div>
               <div><b>Request</b><br><span id="wReq">—</span></div>
               <div><b>Phone</b><br><span id="wPhone">—</span></div>
+              <div><b>Worktype ID</b><br><span id="wTypeId">—</span></div>
               <div><b>Work Item</b><br><span id="wWorkItemId">—</span></div>
               <div><b>Assignment</b><br><span id="wAssignment">—</span></div>
             </div>
@@ -392,7 +414,7 @@
         </div>
       </section>
 
-      <!-- RIGHT: Config / Debug (hide during demo) -->
+      <!-- RIGHT: Config / Debug -->
       <aside class="panel" id="configPanel">
         <h2 style="margin:0 0 6px;font-size:18px;">Config & Debug</h2>
         <p style="margin:0;color:var(--muted);font-size:13px;">
@@ -429,8 +451,9 @@
           <label for="queueId">QueueId</label>
           <input id="queueId" value="39a09c43-4d7c-4ca8-8ebb-ee5e9a300eec" />
 
-          <label for="typeId">TypeId (Worktype)</label>
-          <input id="typeId" value="65a3b4fd-5131-47ca-ac06-7d2b496e171d" />
+          <!-- NOTE: typeId is now chosen automatically based on request selection -->
+          <label for="typeId">TypeId (Worktype) - auto by request (display only)</label>
+          <input id="typeId" value="(auto)" disabled />
 
           <label for="location">Branch Location (work_item_location_text)</label>
           <input id="location" value="SS17" />
@@ -465,13 +488,26 @@
   const TRUEENGAGE_WIDGET_SRC = "https://asset.trueengage.com/accounts/2bd08d9d-10f2-4da4-a021-ed7bd163b6ff/widget.js";
   const POLL_INTERVAL_MS = 2000;
 
-  const REQUEST_OPTIONS = [
-    { label: "Credit Card Replacement", hint: "Replace an existing credit card" },
-    { label: "Opening Account", hint: "Open a new account" },
-    { label: "Closing Account", hint: "Close an existing account" },
-    { label: "Withdrawl", hint: "Cash withdrawal / teller service" },
-    { label: "Others", hint: "General assistance" }
+  // NEW: Segment options (first step)
+  const SEGMENT_OPTIONS = [
+    { label: "Mass", hint: "Mass customer segment" },
+    { label: "Premier", hint: "Premier customer segment" },
+    { label: "Corporate", hint: "Corporate customer segment" }
   ];
+
+  // UPDATED: Request options (second step)
+  const REQUEST_OPTIONS = [
+    { label: "Withdrawal", hint: "Cash withdrawal / teller service" },
+    { label: "Funds Transfer", hint: "Transfer funds / remittance" },
+    { label: "Credit Card Replacement", hint: "Replace an existing credit card" }
+  ];
+
+  // NEW: Worktype ID by request label
+  const WORKTYPE_ID_BY_REQUEST = {
+    "Withdrawal": "4a9c2ade-ed52-4b43-b430-8c5d7b802dbb",
+    "Funds Transfer": "b16f1d37-1e14-4fec-b358-5adf79bbd7b7",
+    "Credit Card Replacement": "65a3b4fd-5131-47ca-ac06-7d2b496e171d"
+  };
 
   // ====== Errors visible ======
   window.onerror = function(message, source, lineno, colno) {
@@ -498,12 +534,19 @@
     badge.innerHTML = `<span class="miniDot"></span><span>Auth: ${text}</span>`;
   }
 
+  function setSegmentBadge(segment){
+    const b = $("segBadge");
+    if (!b) return;
+    b.innerHTML = `<span class="miniDot"></span><span>Segment: ${segment || "—"}</span>`;
+  }
+
   function setDebug(obj){
     $("debug").textContent = typeof obj === "string" ? obj : JSON.stringify(obj, null, 2);
   }
 
   function showScreen(which){
-    ["screenRequest","screenPhone","screenTicket","screenWaiting","screenVideo"].forEach(id => $(id).classList.add("hidden"));
+    ["screenSegment","screenRequest","screenPhone","screenTicket","screenWaiting","screenVideo"]
+      .forEach(id => $(id).classList.add("hidden"));
     $(which).classList.remove("hidden");
   }
 
@@ -654,7 +697,6 @@
         const assignment = wi && wi.assignmentState ? String(wi.assignmentState) : "(unknown)";
         $("wAssignment").textContent = assignment;
 
-        // Keep debug minimal (but still useful)
         setDebug({ step: "Polling work item", workItemId, assignmentState: assignment });
 
         if (assignment === trigger()) {
@@ -671,10 +713,29 @@
   }
 
   // ====== Kiosk state ======
+  let selectedSegment = null;
   let selectedRequest = null;
   let phoneDigits = "";
   let lastTicket4 = "—";
   let lastWorkItemId = null;
+
+  function renderSegmentGrid() {
+    const grid = $("segGrid");
+    grid.innerHTML = "";
+    for (const opt of SEGMENT_OPTIONS) {
+      const card = document.createElement("div");
+      card.className = "reqCard";
+      card.innerHTML = `<div><strong>${opt.label}</strong><div><span>${opt.hint}</span></div></div><div style="color:var(--muted)">›</div>`;
+      card.addEventListener("click", () => {
+        selectedSegment = opt.label;
+        selectedRequest = null;
+        phoneDigits = "";
+        setSegmentBadge(selectedSegment);
+        showScreen("screenRequest");
+      });
+      grid.appendChild(card);
+    }
+  }
 
   function renderRequestGrid() {
     const grid = $("reqGrid");
@@ -685,9 +746,14 @@
       card.innerHTML = `<div><strong>${opt.label}</strong><div><span>${opt.hint}</span></div></div><div style="color:var(--muted)">›</div>`;
       card.addEventListener("click", () => {
         selectedRequest = opt.label;
+
+        // show computed worktype id in config (display-only)
+        const typeId = WORKTYPE_ID_BY_REQUEST[selectedRequest] || "(unknown)";
+        $("typeId").value = typeId;
+
         phoneDigits = "";
         $("phoneDisplay").textContent = "—";
-        $("phoneHint").textContent = `Request: ${selectedRequest}`;
+        $("phoneHint").textContent = `Segment: ${selectedSegment || "—"} • Request: ${selectedRequest}`;
         showScreen("screenPhone");
       });
       grid.appendChild(card);
@@ -704,17 +770,28 @@
   async function submitWorkItemFromKiosk() {
     const tokenNow = getTokenFromStorage();
     if (!tokenNow) { alert("Not authenticated. Click Login first."); setStatus("bad", "Not authenticated"); return; }
+
+    if (!selectedSegment) { alert("Please select a customer segment."); showScreen("screenSegment"); return; }
     if (!selectedRequest) { alert("Please select a request."); showScreen("screenRequest"); return; }
     if (!phoneDigits || phoneDigits.length < 6) { alert("Please enter a valid phone number."); return; }
 
     const apiBase = $("apiBase").value.trim();
     const workbinId = $("workbinId").value.trim();
     const queueId = $("queueId").value.trim();
-    const typeId = $("typeId").value.trim();
     const location = $("location").value.trim();
     const workItemType = $("workItemType").value.trim();
 
+    // NEW: choose worktype ID based on request
+    const typeId = WORKTYPE_ID_BY_REQUEST[selectedRequest];
+    if (!typeId) {
+      alert("No Worktype ID mapped for this request.");
+      setStatus("bad", "Failed");
+      setDebug({ error: "missing_worktype_mapping", selectedRequest });
+      return;
+    }
+
     const customFieldsObj = {
+      customer_segment_text: selectedSegment,          // NEW
       customer_phone_number_text: phoneDigits,
       work_item_location_text: location,
       work_item_task_text: selectedRequest,
@@ -729,9 +806,11 @@
     // Ticket screen (show immediately)
     $("ticketNumber").textContent = "—";
     $("ticketMsg").textContent = "Submitting…";
+    $("tSeg").textContent = selectedSegment;
     $("tReq").textContent = selectedRequest;
     $("tPhone").textContent = phoneDigits;
     $("tBranch").textContent = location;
+    $("tTypeId").textContent = typeId;
     $("tCreated").textContent = new Date().toLocaleString();
     showScreen("screenTicket");
 
@@ -739,19 +818,19 @@
       const result = await createWorkItem(apiBase, tokenNow, payload);
 
       lastWorkItemId = result && result.id ? String(result.id) : null;
-
-      // IMPORTANT: ticket is ALWAYS a 4-digit number (same as before)
       lastTicket4 = lastWorkItemId ? hashTo4Digits(lastWorkItemId) : nextLocalTicket();
 
       $("ticketNumber").textContent = lastTicket4;
       $("ticketMsg").textContent = "Thank you. Please wait—connecting you to an agent…";
       setStatus("ok", "Authenticated");
-      setDebug({ response: result, ticketNumber: lastTicket4 });
+      setDebug({ response: result, ticketNumber: lastTicket4, segment: selectedSegment, request: selectedRequest, typeId });
 
       // Move to waiting screen but KEEP the big 4 digits
       $("waitTicketNumber").textContent = lastTicket4;
+      $("wSeg").textContent = selectedSegment;
       $("wReq").textContent = selectedRequest;
       $("wPhone").textContent = phoneDigits;
+      $("wTypeId").textContent = typeId;
       $("wWorkItemId").textContent = lastWorkItemId || "—";
       $("wAssignment").textContent = "—";
       showScreen("screenWaiting");
@@ -761,7 +840,6 @@
         return;
       }
 
-      // Start polling /api/v2/taskmanagement/workitems/{workitemId} for assignmentState=Connected
       startPollingForConnected(apiBase, tokenNow, lastWorkItemId);
 
     } catch (e) {
@@ -785,6 +863,7 @@
     $("redirPreview").textContent = REDIRECT_URI;
     $("authBasePreview").textContent = authorizeBase();
 
+    renderSegmentGrid();
     renderRequestGrid();
 
     // OAuth callback handling
@@ -819,37 +898,53 @@
       stopPolling();
       setStatus("bad", "Not authenticated");
       alert("Logged out.");
-      showScreen("screenRequest");
+      showScreen("screenSegment");
     });
 
+    $("toggleConfigBtnSeg").addEventListener("click", toggleConfig);
     $("toggleConfigBtn").addEventListener("click", toggleConfig);
     $("toggleConfigBtn2").addEventListener("click", toggleConfig);
     $("toggleConfigBtn3").addEventListener("click", toggleConfig);
     $("toggleConfigBtn4").addEventListener("click", toggleConfig);
     $("toggleConfigBtn5").addEventListener("click", toggleConfig);
 
+    $("backToSegmentBtn").addEventListener("click", () => {
+      selectedRequest = null;
+      phoneDigits = "";
+      showScreen("screenSegment");
+    });
+
     $("backToRequestBtn").addEventListener("click", () => showScreen("screenRequest"));
 
     $("newTicketBtn").addEventListener("click", () => {
+      selectedSegment = null;
       selectedRequest = null;
       phoneDigits = "";
+      $("typeId").value = "(auto)";
       stopPolling();
-      showScreen("screenRequest");
+      setSegmentBadge(null);
+      showScreen("screenSegment");
     });
 
     $("cancelWaitBtn").addEventListener("click", () => {
       stopPolling();
       alert("Cancelled.");
+      selectedSegment = null;
       selectedRequest = null;
       phoneDigits = "";
-      showScreen("screenRequest");
+      $("typeId").value = "(auto)";
+      setSegmentBadge(null);
+      showScreen("screenSegment");
     });
 
     $("endVideoBtn").addEventListener("click", () => {
       stopPolling();
+      selectedSegment = null;
       selectedRequest = null;
       phoneDigits = "";
-      showScreen("screenRequest");
+      $("typeId").value = "(auto)";
+      setSegmentBadge(null);
+      showScreen("screenSegment");
     });
 
     document.querySelectorAll(".key").forEach(el => {
@@ -863,7 +958,8 @@
       });
     });
 
-    showScreen("screenRequest");
+    setSegmentBadge(selectedSegment);
+    showScreen("screenSegment");
   });
 </script>
 </body>
