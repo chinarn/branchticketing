@@ -196,21 +196,6 @@
     }
     @keyframes spin{ to { transform: rotate(360deg); } }
 
-    /* VIDEO screen */
-    .videoWrap{
-      border:1px solid rgba(255,255,255,.10);
-      background:rgba(3,7,18,.30);
-      border-radius:22px;
-      padding:12px;
-      min-height:360px;
-    }
-    .videoTitle{
-      display:flex; justify-content:space-between; align-items:center;
-      margin-bottom:10px;
-    }
-    .videoTitle h3{margin:0; font-size:16px}
-    .videoHint{color:var(--muted); font-size:12px}
-
     /* Right panel (debug/config) */
     label{display:block; font-size:13px; color:var(--muted); margin:10px 0 8px}
     input, select{
@@ -265,7 +250,7 @@
       <!-- LEFT: Kiosk UI -->
       <section class="panel">
 
-        <!-- NEW: Segment selection screen -->
+        <!-- Segment selection screen -->
         <div id="screenSegment" class="screen">
           <div class="screenTop">
             <h2>Select customer segment</h2>
@@ -284,7 +269,7 @@
           </div>
         </div>
 
-        <!-- Request screen (now after segment) -->
+        <!-- Request screen -->
         <div id="screenRequest" class="screen hidden">
           <div class="screenTop">
             <h2>Select your request</h2>
@@ -300,6 +285,7 @@
           </div>
         </div>
 
+        <!-- Phone keypad -->
         <div id="screenPhone" class="screen hidden">
           <div class="screenTop">
             <h2>Enter your phone number</h2>
@@ -392,19 +378,17 @@
           </div>
         </div>
 
-        <!-- Video screen -->
+        <!-- Video screen (blank + Start Video) -->
         <div id="screenVideo" class="screen hidden">
           <div class="screenTop">
-            <h2>Video call</h2>
-            <p>An agent is ready. Please start your video call.</p>
+            <h2>Video call ready</h2>
+            <p>Press <b>Start Video</b> to begin.</p>
           </div>
 
-          <div class="videoWrap">
-            <div class="videoTitle">
-              <h3>TrueEngage Video Widget</h3>
-              <div class="videoHint" id="videoHint">Loading widget…</div>
-            </div>
-            <div id="videoMount" style="min-height:300px;"></div>
+          <div style="flex:1;"></div>
+
+          <div class="actionsRow" style="justify-content:center;">
+            <button class="btn primary big" id="startVideoBtn" type="button">Start Video</button>
           </div>
 
           <div class="actionsRow">
@@ -451,7 +435,6 @@
           <label for="queueId">QueueId</label>
           <input id="queueId" value="39a09c43-4d7c-4ca8-8ebb-ee5e9a300eec" />
 
-          <!-- NOTE: typeId is now chosen automatically based on request selection -->
           <label for="typeId">TypeId (Worktype) - auto by request (display only)</label>
           <input id="typeId" value="(auto)" disabled />
 
@@ -488,21 +471,21 @@
   const TRUEENGAGE_WIDGET_SRC = "https://asset.trueengage.com/accounts/2bd08d9d-10f2-4da4-a021-ed7bd163b6ff/widget.js";
   const POLL_INTERVAL_MS = 2000;
 
-  // NEW: Segment options (first step)
+  // Segment options (first step)
   const SEGMENT_OPTIONS = [
     { label: "Mass", hint: "Mass customer segment" },
     { label: "Premier", hint: "Premier customer segment" },
     { label: "Corporate", hint: "Corporate customer segment" }
   ];
 
-  // UPDATED: Request options (second step)
+  // Request options (second step)
   const REQUEST_OPTIONS = [
     { label: "Withdrawal", hint: "Cash withdrawal / teller service" },
     { label: "Funds Transfer", hint: "Transfer funds / remittance" },
     { label: "Credit Card Replacement", hint: "Replace an existing credit card" }
   ];
 
-  // NEW: Worktype ID by request label
+  // Worktype ID by request label
   const WORKTYPE_ID_BY_REQUEST = {
     "Withdrawal": "4a9c2ade-ed52-4b43-b430-8c5d7b802dbb",
     "Funds Transfer": "b16f1d37-1e14-4fec-b358-5adf79bbd7b7",
@@ -667,7 +650,7 @@
     return String(next).padStart(4, "0");
   }
 
-  // ====== Video widget injection (only once) ======
+  // ====== TrueEngage widget injection (only once) ======
   function ensureTrueEngageLoaded(){
     const existing = document.getElementById("trueengageWidgetScript");
     if (existing) return;
@@ -675,12 +658,12 @@
     s.id = "trueengageWidgetScript";
     s.async = true;
     s.src = TRUEENGAGE_WIDGET_SRC;
-    s.onload = () => { $("videoHint").textContent = "Widget loaded."; };
-    s.onerror = () => { $("videoHint").textContent = "Failed to load widget script."; };
+    s.onload = () => { setDebug({ widget: "loaded" }); };
+    s.onerror = () => { setDebug({ widget: "failed_to_load" }); };
     document.body.appendChild(s);
   }
 
-  // ====== Polling: trigger video when assignmentState == Connected ======
+  // ====== Polling: show Start Video screen when assignmentState == Connected ======
   let pollTimer = null;
   function stopPolling(){
     if (pollTimer) clearInterval(pollTimer);
@@ -701,8 +684,8 @@
 
         if (assignment === trigger()) {
           stopPolling();
+          // IMPORTANT CHANGE: show blank "Start Video" interface, do NOT auto-open video.
           ensureTrueEngageLoaded();
-          $("videoHint").textContent = "Loading widget…";
           showScreen("screenVideo");
         }
       } catch (e) {
@@ -781,7 +764,7 @@
     const location = $("location").value.trim();
     const workItemType = $("workItemType").value.trim();
 
-    // NEW: choose worktype ID based on request
+    // choose worktype ID based on request
     const typeId = WORKTYPE_ID_BY_REQUEST[selectedRequest];
     if (!typeId) {
       alert("No Worktype ID mapped for this request.");
@@ -791,7 +774,7 @@
     }
 
     const customFieldsObj = {
-      customer_segment_text: selectedSegment,          // NEW
+      customer_segment_text: selectedSegment,
       customer_phone_number_text: phoneDigits,
       work_item_location_text: location,
       work_item_task_text: selectedRequest,
@@ -945,6 +928,19 @@
       $("typeId").value = "(auto)";
       setSegmentBadge(null);
       showScreen("screenSegment");
+    });
+
+    // NEW: Start Video button (only opens video when clicked)
+    $("startVideoBtn").addEventListener("click", () => {
+      try {
+        if (window.trueengage && typeof window.trueengage.openView === "function") {
+          window.trueengage.openView("video");
+        } else {
+          alert("TrueEngage is not ready yet. Please try again in a moment.");
+        }
+      } catch (e) {
+        alert("Failed to start video: " + String(e && e.message ? e.message : e));
+      }
     });
 
     document.querySelectorAll(".key").forEach(el => {
