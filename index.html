@@ -917,7 +917,7 @@
 
     // Start Video button: directly call TrueEngage openView without checking load state
     $("startVideoBtn").addEventListener("click", () => {
-      window.trueengage.openView("video");
+      window.trueengage.openView('video', false, 'kiosk');;
     });
 
     document.querySelectorAll(".key").forEach(el => {
