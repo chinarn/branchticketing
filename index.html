@@ -1013,6 +1013,7 @@
 
     // ====== Init ======
     document.addEventListener("DOMContentLoaded", () => {
+      localStorage.clear() 
       const jsBadge = $("jsBadge");
       jsBadge.classList.add("ok");
       jsBadge.innerHTML = `<span class="miniDot"></span><span>JS loaded ✅</span>`;
