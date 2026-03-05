@@ -1,238 +1,426 @@
+
 <!doctype html>
 <html lang="en">
+
+<script async src="https://asset.trueengage.com/accounts/2bd08d9d-10f2-4da4-a021-ed7bd163b6ff/widget.js"></script>
+
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Branch Queue Kiosk (Implicit Grant Demo)</title>
   <style>
-    :root{
-      --bg:#0b1220; --panel:#121a2c; --text:#e6edf6; --muted:#a7b3c7;
-      --ok:#22c55e; --bad:#ef4444; --radius:22px;
-      --shadow:0 18px 50px rgba(0,0,0,.45);
+    :root {
+      --bg: #0b1220;
+      --panel: #121a2c;
+      --text: #e6edf6;
+      --muted: #a7b3c7;
+      --ok: #22c55e;
+      --bad: #ef4444;
+      --radius: 22px;
+      --shadow: 0 18px 50px rgba(0, 0, 0, .45);
       --font: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial;
     }
-    *{box-sizing:border-box}
-    body{
-      margin:0; font-family:var(--font); color:var(--text);
-      background: radial-gradient(1100px 600px at 50% 10%, rgba(56,189,248,.14), transparent 55%),
-                  radial-gradient(900px 500px at 20% 90%, rgba(34,197,94,.10), transparent 55%),
-                  var(--bg);
-      min-height:100vh; display:flex; align-items:center; justify-content:center; padding:22px;
-    }
-    .wrap{
-      width:min(1100px,100%); border-radius:calc(var(--radius) + 10px);
-      border:1px solid rgba(255,255,255,.08);
-      background:linear-gradient(180deg, rgba(255,255,255,.04), rgba(255,255,255,.02));
-      box-shadow:var(--shadow); overflow:hidden;
-    }
-    header{
-      display:flex; justify-content:space-between; align-items:center;
-      padding:18px 22px; background:rgba(18,26,44,.75);
-      border-bottom:1px solid rgba(255,255,255,.08);
-      gap:12px;
-    }
-    header h1{margin:0; font-size:18px}
-    header p{margin:4px 0 0; font-size:12px; color:var(--muted)}
-    .status{display:flex; gap:10px; align-items:center; font-size:12px; color:var(--muted)}
-    .dot{width:9px;height:9px;border-radius:50%;background:rgba(167,179,199,.6)}
-    .dot.ok{background:rgba(34,197,94,.9)}
-    .dot.bad{background:rgba(239,68,68,.9)}
 
-    main{display:grid; grid-template-columns:1fr 380px; gap:16px; padding:18px}
-    @media (max-width:1000px){ main{grid-template-columns:1fr} }
+    * {
+      box-sizing: border-box
+    }
 
-    .panel{
-      background:rgba(18,26,44,.65);
-      border:1px solid rgba(255,255,255,.08);
-      border-radius:var(--radius);
-      padding:16px;
+    body {
+      margin: 0;
+      font-family: var(--font);
+      color: var(--text);
+      background: radial-gradient(1100px 600px at 50% 10%, rgba(56, 189, 248, .14), transparent 55%),
+        radial-gradient(900px 500px at 20% 90%, rgba(34, 197, 94, .10), transparent 55%),
+        var(--bg);
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 22px;
+    }
+
+    .wrap {
+      width: min(1100px, 100%);
+      border-radius: calc(var(--radius) + 10px);
+      border: 1px solid rgba(255, 255, 255, .08);
+      background: linear-gradient(180deg, rgba(255, 255, 255, .04), rgba(255, 255, 255, .02));
+      box-shadow: var(--shadow);
+      overflow: hidden;
+    }
+
+    header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 18px 22px;
+      background: rgba(18, 26, 44, .75);
+      border-bottom: 1px solid rgba(255, 255, 255, .08);
+      gap: 12px;
+    }
+
+    header h1 {
+      margin: 0;
+      font-size: 18px
+    }
+
+    header p {
+      margin: 4px 0 0;
+      font-size: 12px;
+      color: var(--muted)
+    }
+
+    .status {
+      display: flex;
+      gap: 10px;
+      align-items: center;
+      font-size: 12px;
+      color: var(--muted)
+    }
+
+    .dot {
+      width: 9px;
+      height: 9px;
+      border-radius: 50%;
+      background: rgba(167, 179, 199, .6)
+    }
+
+    .dot.ok {
+      background: rgba(34, 197, 94, .9)
+    }
+
+    .dot.bad {
+      background: rgba(239, 68, 68, .9)
+    }
+
+    main {
+      display: grid;
+      grid-template-columns: 1fr 380px;
+      gap: 16px;
+      padding: 18px
+    }
+
+    @media (max-width:1000px) {
+      main {
+        grid-template-columns: 1fr
+      }
+    }
+
+    .panel {
+      background: rgba(18, 26, 44, .65);
+      border: 1px solid rgba(255, 255, 255, .08);
+      border-radius: var(--radius);
+      padding: 16px;
     }
 
     /* Kiosk flow screens */
-    .screen{
-      min-height:520px;
-      display:flex;
-      flex-direction:column;
-      justify-content:space-between;
-      gap:14px;
-      padding:10px;
-    }
-    .screenTop h2{margin:0;font-size:24px}
-    .screenTop p{margin:6px 0 0; color:var(--muted); font-size:14px; line-height:1.35}
-    .actionsRow{display:flex; gap:12px; flex-wrap:wrap; justify-content:flex-end}
-
-    .btn{
-      cursor:pointer; border-radius:18px; padding:14px 16px;
-      border:1px solid rgba(255,255,255,.12);
-      background:rgba(255,255,255,.06); color:var(--text); font-weight:900;
-      font-size:15px;
-    }
-    .btn.primary{
-      background:linear-gradient(135deg, rgba(56,189,248,.95), rgba(34,197,94,.82));
-      color:#06121f; border:none;
-    }
-    .btn.danger{
-      border-color: rgba(239,68,68,.25);
-      background: rgba(239,68,68,.10);
-    }
-    .btn.big{
-      padding:16px 18px;
-      font-size:16px;
-      border-radius:20px;
+    .screen {
+      min-height: 520px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      gap: 14px;
+      padding: 10px;
     }
 
-    .gridReq{
-      display:grid;
-      grid-template-columns:repeat(2, minmax(0, 1fr));
-      gap:12px;
-      margin-top:8px;
+    .screenTop h2 {
+      margin: 0;
+      font-size: 24px
     }
-    @media (max-width:600px){ .gridReq{grid-template-columns:1fr} }
-    .reqCard{
-      border:1px solid rgba(255,255,255,.10);
-      background:rgba(3,7,18,.32);
-      border-radius:22px;
-      padding:16px;
-      cursor:pointer;
-      transition:transform .05s ease;
-      min-height:86px;
-      display:flex; align-items:center; justify-content:space-between;
+
+    .screenTop p {
+      margin: 6px 0 0;
+      color: var(--muted);
+      font-size: 14px;
+      line-height: 1.35
     }
-    .reqCard:active{ transform:scale(.99); }
-    .reqCard strong{font-size:16px}
-    .reqCard span{color:var(--muted); font-size:12px}
+
+    .actionsRow {
+      display: flex;
+      gap: 12px;
+      flex-wrap: wrap;
+      justify-content: flex-end
+    }
+
+    .btn {
+      cursor: pointer;
+      border-radius: 18px;
+      padding: 14px 16px;
+      border: 1px solid rgba(255, 255, 255, .12);
+      background: rgba(255, 255, 255, .06);
+      color: var(--text);
+      font-weight: 900;
+      font-size: 15px;
+    }
+
+    .btn.primary {
+      background: linear-gradient(135deg, rgba(56, 189, 248, .95), rgba(34, 197, 94, .82));
+      color: #06121f;
+      border: none;
+    }
+
+    .btn.danger {
+      border-color: rgba(239, 68, 68, .25);
+      background: rgba(239, 68, 68, .10);
+    }
+
+    .btn.big {
+      padding: 16px 18px;
+      font-size: 16px;
+      border-radius: 20px;
+    }
+
+    .gridReq {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 12px;
+      margin-top: 8px;
+    }
+
+    @media (max-width:600px) {
+      .gridReq {
+        grid-template-columns: 1fr
+      }
+    }
+
+    .reqCard {
+      border: 1px solid rgba(255, 255, 255, .10);
+      background: rgba(3, 7, 18, .32);
+      border-radius: 22px;
+      padding: 16px;
+      cursor: pointer;
+      transition: transform .05s ease;
+      min-height: 86px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .reqCard:active {
+      transform: scale(.99);
+    }
+
+    .reqCard strong {
+      font-size: 16px
+    }
+
+    .reqCard span {
+      color: var(--muted);
+      font-size: 12px
+    }
 
     /* Keypad */
-    .phoneBox{
-      border:1px solid rgba(255,255,255,.10);
-      background:rgba(3,7,18,.30);
-      border-radius:22px;
-      padding:16px;
-      display:flex;
-      align-items:center;
-      justify-content:space-between;
-      gap:14px;
+    .phoneBox {
+      border: 1px solid rgba(255, 255, 255, .10);
+      background: rgba(3, 7, 18, .30);
+      border-radius: 22px;
+      padding: 16px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 14px;
     }
-    .phoneValue{
-      font-size:34px;
-      font-weight:900;
-      letter-spacing:2px;
-      word-break:break-all;
+
+    .phoneValue {
+      font-size: 34px;
+      font-weight: 900;
+      letter-spacing: 2px;
+      word-break: break-all;
     }
-    .phoneHint{color:var(--muted); font-size:12px; margin-top:6px}
-    .kbd{
-      display:grid;
-      grid-template-columns:repeat(3, 1fr);
-      gap:12px;
-      margin-top:12px;
+
+    .phoneHint {
+      color: var(--muted);
+      font-size: 12px;
+      margin-top: 6px
     }
-    .key{
-      border-radius:22px;
-      padding:18px 0;
-      text-align:center;
-      border:1px solid rgba(255,255,255,.12);
-      background:rgba(255,255,255,.06);
-      font-size:22px;
-      font-weight:900;
-      user-select:none;
-      cursor:pointer;
+
+    .kbd {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 12px;
+      margin-top: 12px;
     }
-    .key:active{ transform:scale(.99); }
-    .key.wide{ grid-column: span 2; }
-    .key.ok{
-      background:linear-gradient(135deg, rgba(56,189,248,.95), rgba(34,197,94,.82));
-      color:#06121f;
-      border:none;
+
+    .key {
+      border-radius: 22px;
+      padding: 18px 0;
+      text-align: center;
+      border: 1px solid rgba(255, 255, 255, .12);
+      background: rgba(255, 255, 255, .06);
+      font-size: 22px;
+      font-weight: 900;
+      user-select: none;
+      cursor: pointer;
     }
-    .key.back{
-      border-color: rgba(255,255,255,.18);
-      background: rgba(255,255,255,.04);
+
+    .key:active {
+      transform: scale(.99);
     }
-    .key.clear{
-      border-color: rgba(239,68,68,.25);
-      background: rgba(239,68,68,.10);
+
+    .key.wide {
+      grid-column: span 2;
+    }
+
+    .key.ok {
+      background: linear-gradient(135deg, rgba(56, 189, 248, .95), rgba(34, 197, 94, .82));
+      color: #06121f;
+      border: none;
+    }
+
+    .key.back {
+      border-color: rgba(255, 255, 255, .18);
+      background: rgba(255, 255, 255, .04);
+    }
+
+    .key.clear {
+      border-color: rgba(239, 68, 68, .25);
+      background: rgba(239, 68, 68, .10);
     }
 
     /* Ticket screen */
-    .ticketBig{
-      font-size:84px;
-      font-weight:1000;
-      letter-spacing:6px;
-      text-align:center;
-      margin:6px 0 0;
+    .ticketBig {
+      font-size: 84px;
+      font-weight: 1000;
+      letter-spacing: 6px;
+      text-align: center;
+      margin: 6px 0 0;
     }
-    .ticketSub{
-      text-align:center;
-      color:var(--muted);
-      margin:6px 0 0;
+
+    .ticketSub {
+      text-align: center;
+      color: var(--muted);
+      margin: 6px 0 0;
     }
-    .ticketMeta{
-      margin-top:14px;
-      display:grid;
-      grid-template-columns:1fr 1fr;
-      gap:10px;
+
+    .ticketMeta {
+      margin-top: 14px;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
     }
-    .ticketMeta div{
-      border:1px solid rgba(255,255,255,.08); background:rgba(0,0,0,.15);
-      border-radius:18px; padding:10px 12px; color:var(--muted); font-size:13px;
+
+    .ticketMeta div {
+      border: 1px solid rgba(255, 255, 255, .08);
+      background: rgba(0, 0, 0, .15);
+      border-radius: 18px;
+      padding: 10px 12px;
+      color: var(--muted);
+      font-size: 13px;
     }
-    .ticketMeta b{color:var(--text)}
+
+    .ticketMeta b {
+      color: var(--text)
+    }
 
     /* WAITING screen */
-    .waitPulse{
-      margin-top:10px;
-      display:flex;
-      align-items:center;
-      justify-content:center;
-      gap:12px;
-      color:var(--muted);
-      font-size:14px;
+    .waitPulse {
+      margin-top: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 12px;
+      color: var(--muted);
+      font-size: 14px;
     }
-    .spinner{
-      width:20px; height:20px; border-radius:50%;
-      border:3px solid rgba(255,255,255,.18);
-      border-top-color: rgba(56,189,248,.9);
-      animation:spin 1s linear infinite;
+
+    .spinner {
+      width: 20px;
+      height: 20px;
+      border-radius: 50%;
+      border: 3px solid rgba(255, 255, 255, .18);
+      border-top-color: rgba(56, 189, 248, .9);
+      animation: spin 1s linear infinite;
     }
-    @keyframes spin{ to { transform: rotate(360deg); } }
+
+    @keyframes spin {
+      to {
+        transform: rotate(360deg);
+      }
+    }
 
     /* Right panel (debug/config) */
-    label{display:block; font-size:13px; color:var(--muted); margin:10px 0 8px}
-    input, select{
-      width:100%; padding:11px 12px; border-radius:16px;
-      border:1px solid rgba(255,255,255,.12);
-      background:rgba(3,7,18,.35); color:var(--text); outline:none;
+    label {
+      display: block;
+      font-size: 13px;
+      color: var(--muted);
+      margin: 10px 0 8px
     }
-    input:focus, select:focus{
-      border-color:rgba(56,189,248,.55);
-      box-shadow:0 0 0 5px rgba(56,189,248,.12);
-    }
-    .pill{
-      display:inline-flex; gap:8px; align-items:center;
-      border:1px solid rgba(255,255,255,.10);
-      background:rgba(255,255,255,.06);
-      padding:8px 10px; border-radius:999px; font-size:12px;
-      color:var(--muted);
-      margin-top:10px;
-    }
-    .miniDot{ width:8px; height:8px; border-radius:50%; background:rgba(167,179,199,.7); }
-    .pill.ok .miniDot{ background:rgba(34,197,94,.9); }
-    .pill.bad .miniDot{ background:rgba(239,68,68,.9); }
 
-    details.note{
-      margin-top:10px; padding:10px 12px; border-radius:18px;
-      border:1px solid rgba(255,255,255,.10); background:rgba(255,255,255,.04);
-      color:var(--muted); font-size:12px; line-height:1.35;
+    input,
+    select {
+      width: 100%;
+      padding: 11px 12px;
+      border-radius: 16px;
+      border: 1px solid rgba(255, 255, 255, .12);
+      background: rgba(3, 7, 18, .35);
+      color: var(--text);
+      outline: none;
     }
-    pre{
-      margin:10px 0 0; padding:12px; border-radius:18px;
-      border:1px solid rgba(255,255,255,.10); background:rgba(3,7,18,.35);
-      color:var(--muted); font-size:12px; overflow:auto; max-height:260px;
-      white-space:pre-wrap; word-break:break-word;
+
+    input:focus,
+    select:focus {
+      border-color: rgba(56, 189, 248, .55);
+      box-shadow: 0 0 0 5px rgba(56, 189, 248, .12);
     }
-    .hidden{ display:none !important; }
+
+    .pill {
+      display: inline-flex;
+      gap: 8px;
+      align-items: center;
+      border: 1px solid rgba(255, 255, 255, .10);
+      background: rgba(255, 255, 255, .06);
+      padding: 8px 10px;
+      border-radius: 999px;
+      font-size: 12px;
+      color: var(--muted);
+      margin-top: 10px;
+    }
+
+    .miniDot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: rgba(167, 179, 199, .7);
+    }
+
+    .pill.ok .miniDot {
+      background: rgba(34, 197, 94, .9);
+    }
+
+    .pill.bad .miniDot {
+      background: rgba(239, 68, 68, .9);
+    }
+
+    details.note {
+      margin-top: 10px;
+      padding: 10px 12px;
+      border-radius: 18px;
+      border: 1px solid rgba(255, 255, 255, .10);
+      background: rgba(255, 255, 255, .04);
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.35;
+    }
+
+    pre {
+      margin: 10px 0 0;
+      padding: 12px;
+      border-radius: 18px;
+      border: 1px solid rgba(255, 255, 255, .10);
+      background: rgba(3, 7, 18, .35);
+      color: var(--muted);
+      font-size: 12px;
+      overflow: auto;
+      max-height: 260px;
+      white-space: pre-wrap;
+      word-break: break-word;
+    }
+
+    .hidden {
+      display: none !important;
+    }
   </style>
 </head>
+
 <body>
   <div class="wrap">
     <header>
@@ -360,7 +548,9 @@
           <div>
             <div class="ticketBig" id="waitTicketNumber">—</div>
             <div class="ticketSub" id="waitSub">Please wait. Your agent will join shortly.</div>
-            <div class="waitPulse" aria-hidden="true"><div class="spinner"></div></div>
+            <div class="waitPulse" aria-hidden="true">
+              <div class="spinner"></div>
+            </div>
 
             <div class="ticketMeta">
               <div><b>Segment</b><br><span id="wSeg">—</span></div>
@@ -462,478 +652,480 @@
     </main>
   </div>
 
-<script>
-  // ====== CONFIGURE THESE ======
-  const CLIENT_ID = "5ad8dc1d-2ee1-41dd-9771-1c0e58f22203";
-  const ENVIRONMENT = "mypurecloud.jp";
-  const REDIRECT_URI = window.location.origin + window.location.pathname;
+  <script>
+    // ====== CONFIGURE THESE ======
+    const CLIENT_ID = "5ad8dc1d-2ee1-41dd-9771-1c0e58f22203";
+    const ENVIRONMENT = "mypurecloud.jp";
+    const REDIRECT_URI = window.location.origin + window.location.pathname;
 
-  const POLL_INTERVAL_MS = 2000;
+    const POLL_INTERVAL_MS = 2000;
 
-  // Segment options (first step)
-  const SEGMENT_OPTIONS = [
-    { label: "Mass", hint: "Mass customer segment" },
-    { label: "Premier", hint: "Premier customer segment" },
-    { label: "Corporate", hint: "Corporate customer segment" }
-  ];
+    // Segment options (first step)
+    const SEGMENT_OPTIONS = [
+      { label: "Mass", hint: "Mass customer segment" },
+      { label: "Premier", hint: "Premier customer segment" },
+      { label: "Corporate", hint: "Corporate customer segment" }
+    ];
 
-  // Request options (second step)
-  const REQUEST_OPTIONS = [
-    { label: "Withdrawal", hint: "Cash withdrawal / teller service" },
-    { label: "Funds Transfer", hint: "Transfer funds / remittance" },
-    { label: "Credit Card Replacement", hint: "Replace an existing credit card" }
-  ];
+    // Request options (second step)
+    const REQUEST_OPTIONS = [
+      { label: "Withdrawal", hint: "Cash withdrawal / teller service" },
+      { label: "Funds Transfer", hint: "Transfer funds / remittance" },
+      { label: "Credit Card Replacement", hint: "Replace an existing credit card" }
+    ];
 
-  // Worktype ID by request label
-  const WORKTYPE_ID_BY_REQUEST = {
-    "Withdrawal": "4a9c2ade-ed52-4b43-b430-8c5d7b802dbb",
-    "Funds Transfer": "b16f1d37-1e14-4fec-b358-5adf79bbd7b7",
-    "Credit Card Replacement": "65a3b4fd-5131-47ca-ac06-7d2b496e171d"
-  };
-
-  // ====== Errors visible ======
-  window.onerror = function(message, source, lineno, colno) {
-    alert(`JS error: ${message}\n${source}:${lineno}:${colno}`);
-  };
-  window.onunhandledrejection = function(e) {
-    alert(`Unhandled rejection: ${String(e.reason)}`);
-  };
-
-  // ====== Helpers ======
-  const $ = (id) => document.getElementById(id);
-
-  function setStatus(state, text){
-    const dot = $("dot");
-    dot.classList.remove("ok","bad");
-    if (state === "ok") dot.classList.add("ok");
-    if (state === "bad") dot.classList.add("bad");
-    $("status").textContent = text;
-
-    const badge = $("authBadge");
-    badge.classList.remove("ok","bad");
-    if (state === "ok") badge.classList.add("ok");
-    if (state === "bad") badge.classList.add("bad");
-    badge.innerHTML = `<span class="miniDot"></span><span>Auth: ${text}</span>`;
-  }
-
-  function setSegmentBadge(segment){
-    const b = $("segBadge");
-    if (!b) return;
-    b.innerHTML = `<span class="miniDot"></span><span>Segment: ${segment || "—"}</span>`;
-  }
-
-  function setDebug(obj){
-    $("debug").textContent = typeof obj === "string" ? obj : JSON.stringify(obj, null, 2);
-  }
-
-  function showScreen(which){
-    ["screenSegment","screenRequest","screenPhone","screenTicket","screenWaiting","screenVideo"]
-      .forEach(id => $(id).classList.add("hidden"));
-    $(which).classList.remove("hidden");
-  }
-
-  function toggleConfig(){
-    $("configPanel").classList.toggle("hidden");
-  }
-
-  function parseFragment() {
-    const hash = window.location.hash.startsWith("#") ? window.location.hash.slice(1) : window.location.hash;
-    const params = new URLSearchParams(hash);
-    return Object.fromEntries(params.entries());
-  }
-
-  function saveToken(token, expiresInSeconds) {
-    const expiresAt = Date.now() + (Number(expiresInSeconds || "0") * 1000);
-    sessionStorage.setItem("gc_access_token", token);
-    sessionStorage.setItem("gc_expires_at", String(expiresAt));
-  }
-
-  function getTokenFromStorage() {
-    const token = sessionStorage.getItem("gc_access_token");
-    const exp = Number(sessionStorage.getItem("gc_expires_at") || "0");
-    if (!token) return null;
-    if (exp && Date.now() > exp - 30_000) return null;
-    return token;
-  }
-
-  function clearToken() {
-    sessionStorage.removeItem("gc_access_token");
-    sessionStorage.removeItem("gc_expires_at");
-  }
-
-  function randomState() {
-    return Math.random().toString(16).slice(2) + Math.random().toString(16).slice(2);
-  }
-
-  function authorizeBase() {
-    return `https://login.${ENVIRONMENT}/oauth/authorize`;
-  }
-
-  function buildAuthorizeUrl() {
-    const u = new URL(authorizeBase());
-    u.searchParams.set("response_type", "token");
-    u.searchParams.set("client_id", CLIENT_ID);
-    u.searchParams.set("redirect_uri", REDIRECT_URI);
-
-    const st = randomState();
-    sessionStorage.setItem("gc_oauth_state", st);
-    u.searchParams.set("state", st);
-
-    const prompt = $("forcePrompt").value;
-    if (prompt) u.searchParams.set("prompt", prompt);
-
-    return u.toString();
-  }
-
-  function login() {
-    const url = buildAuthorizeUrl();
-    setDebug({ step: "Redirecting to authorize URL", url });
-    window.location.href = url;
-  }
-
-  // ====== APIs ======
-  async function createWorkItem(apiBase, token, payload){
-    const url = apiBase.replace(/\/$/, "") + "/api/v2/taskmanagement/workitems";
-    const res = await fetch(url, {
-      method: "POST",
-      headers: {
-        "Authorization": `Bearer ${token}`,
-        "Content-Type": "application/json",
-        "Accept": "application/json"
-      },
-      body: JSON.stringify(payload)
-    });
-
-    const text = await res.text();
-    let data;
-    try { data = text ? JSON.parse(text) : {}; } catch { data = { raw: text }; }
-
-    if (!res.ok){
-      throw new Error(`Create work item failed (${res.status}): ${JSON.stringify(data)}`);
-    }
-    return data;
-  }
-
-  async function getWorkItem(apiBase, token, workItemId){
-    const url = apiBase.replace(/\/$/, "") + `/api/v2/taskmanagement/workitems/${encodeURIComponent(workItemId)}`;
-    const res = await fetch(url, {
-      method: "GET",
-      headers: {
-        "Authorization": `Bearer ${token}`,
-        "Accept": "application/json"
-      }
-    });
-
-    const text = await res.text();
-    let data;
-    try { data = text ? JSON.parse(text) : {}; } catch { data = { raw: text }; }
-
-    if (!res.ok){
-      throw new Error(`Get work item failed (${res.status}): ${JSON.stringify(data)}`);
-    }
-    return data;
-  }
-
-  // ====== Ticket number: stable 4-digit from id, or local counter fallback ======
-  function hashTo4Digits(str) {
-    let h = 0;
-    for (let i = 0; i < str.length; i++) h = (h * 31 + str.charCodeAt(i)) >>> 0;
-    const n = (h % 9000) + 1000;
-    return String(n);
-  }
-  function nextLocalTicket() {
-    const key = "kiosk_ticket_counter";
-    const cur = Number(localStorage.getItem(key) || "1000");
-    const next = cur + 1;
-    localStorage.setItem(key, String(next));
-    return String(next).padStart(4, "0");
-  }
-
-  // ====== Polling: show Start Video screen when assignmentState == Connected ======
-  let pollTimer = null;
-  function stopPolling(){
-    if (pollTimer) clearInterval(pollTimer);
-    pollTimer = null;
-  }
-
-  function startPollingForConnected(apiBase, token, workItemId){
-    stopPolling();
-    const trigger = () => ($("assignmentTrigger") ? $("assignmentTrigger").value.trim() : "Connected");
-
-    pollTimer = setInterval(async () => {
-      try {
-        const wi = await getWorkItem(apiBase, token, workItemId);
-        const assignment = wi && wi.assignmentState ? String(wi.assignmentState) : "(unknown)";
-        $("wAssignment").textContent = assignment;
-
-        setDebug({ step: "Polling work item", workItemId, assignmentState: assignment });
-
-        if (assignment === trigger()) {
-          stopPolling();
-          // IMPORTANT CHANGE: show blank "Start Video" interface, do NOT auto-open video.
-          showScreen("screenVideo");
-        }
-      } catch (e) {
-        const msg = String(e && e.message ? e.message : e);
-        setDebug({ pollError: msg, workItemId });
-      }
-    }, POLL_INTERVAL_MS);
-  }
-
-  // ====== Kiosk state ======
-  let selectedSegment = null;
-  let selectedRequest = null;
-  let phoneDigits = "";
-  let lastTicket4 = "—";
-  let lastWorkItemId = null;
-
-  function renderSegmentGrid() {
-    const grid = $("segGrid");
-    grid.innerHTML = "";
-    for (const opt of SEGMENT_OPTIONS) {
-      const card = document.createElement("div");
-      card.className = "reqCard";
-      card.innerHTML = `<div><strong>${opt.label}</strong><div><span>${opt.hint}</span></div></div><div style="color:var(--muted)">›</div>`;
-      card.addEventListener("click", () => {
-        selectedSegment = opt.label;
-        selectedRequest = null;
-        phoneDigits = "";
-        setSegmentBadge(selectedSegment);
-        showScreen("screenRequest");
-      });
-      grid.appendChild(card);
-    }
-  }
-
-  function renderRequestGrid() {
-    const grid = $("reqGrid");
-    grid.innerHTML = "";
-    for (const opt of REQUEST_OPTIONS) {
-      const card = document.createElement("div");
-      card.className = "reqCard";
-      card.innerHTML = `<div><strong>${opt.label}</strong><div><span>${opt.hint}</span></div></div><div style="color:var(--muted)">›</div>`;
-      card.addEventListener("click", () => {
-        selectedRequest = opt.label;
-
-        // show computed worktype id in config (display-only)
-        const typeId = WORKTYPE_ID_BY_REQUEST[selectedRequest] || "(unknown)";
-        $("typeId").value = typeId;
-
-        phoneDigits = "";
-        $("phoneDisplay").textContent = "—";
-        $("phoneHint").textContent = `Segment: ${selectedSegment || "—"} • Request: ${selectedRequest}`;
-        showScreen("screenPhone");
-      });
-      grid.appendChild(card);
-    }
-  }
-
-  function updatePhoneDisplay() {
-    $("phoneDisplay").textContent = phoneDigits.length ? phoneDigits : "—";
-  }
-  function addDigit(d) { if (phoneDigits.length < 15) { phoneDigits += d; updatePhoneDisplay(); } }
-  function backspaceDigit() { phoneDigits = phoneDigits.slice(0, -1); updatePhoneDisplay(); }
-  function clearDigits() { phoneDigits = ""; updatePhoneDisplay(); }
-
-  async function submitWorkItemFromKiosk() {
-    const tokenNow = getTokenFromStorage();
-    if (!tokenNow) { alert("Not authenticated. Click Login first."); setStatus("bad", "Not authenticated"); return; }
-
-    if (!selectedSegment) { alert("Please select a customer segment."); showScreen("screenSegment"); return; }
-    if (!selectedRequest) { alert("Please select a request."); showScreen("screenRequest"); return; }
-    if (!phoneDigits || phoneDigits.length < 6) { alert("Please enter a valid phone number."); return; }
-
-    const apiBase = $("apiBase").value.trim();
-    const workbinId = $("workbinId").value.trim();
-    const queueId = $("queueId").value.trim();
-    const location = $("location").value.trim();
-    const workItemType = $("workItemType").value.trim();
-
-    // choose worktype ID based on request
-    const typeId = WORKTYPE_ID_BY_REQUEST[selectedRequest];
-    if (!typeId) {
-      alert("No Worktype ID mapped for this request.");
-      setStatus("bad", "Failed");
-      setDebug({ error: "missing_worktype_mapping", selectedRequest });
-      return;
-    }
-
-    const customFieldsObj = {
-      customer_segment_text: selectedSegment,
-      customer_phone_number_text: phoneDigits,
-      work_item_location_text: location,
-      work_item_task_text: selectedRequest,
-      work_item_type_text: workItemType,
-      date_time_datetime: new Date().toISOString()
+    // Worktype ID by request label
+    const WORKTYPE_ID_BY_REQUEST = {
+      "Withdrawal": "4a9c2ade-ed52-4b43-b430-8c5d7b802dbb",
+      "Funds Transfer": "b16f1d37-1e14-4fec-b358-5adf79bbd7b7",
+      "Credit Card Replacement": "65a3b4fd-5131-47ca-ac06-7d2b496e171d"
     };
 
-    const payload = { typeId, workbinId, queueId, name: selectedRequest, customFields: customFieldsObj };
+    // ====== Errors visible ======
+    window.onerror = function (message, source, lineno, colno) {
+      alert(`JS error: ${message}\n${source}:${lineno}:${colno}`);
+    };
+    window.onunhandledrejection = function (e) {
+      alert(`Unhandled rejection: ${String(e.reason)}`);
+    };
 
-    setDebug({ step: "Submitting work item", endpoint: apiBase + "/api/v2/taskmanagement/workitems", payload });
+    // ====== Helpers ======
+    const $ = (id) => document.getElementById(id);
 
-    // Ticket screen (show immediately)
-    $("ticketNumber").textContent = "—";
-    $("ticketMsg").textContent = "Submitting…";
-    $("tSeg").textContent = selectedSegment;
-    $("tReq").textContent = selectedRequest;
-    $("tPhone").textContent = phoneDigits;
-    $("tBranch").textContent = location;
-    $("tTypeId").textContent = typeId;
-    $("tCreated").textContent = new Date().toLocaleString();
-    showScreen("screenTicket");
+    function setStatus(state, text) {
+      const dot = $("dot");
+      dot.classList.remove("ok", "bad");
+      if (state === "ok") dot.classList.add("ok");
+      if (state === "bad") dot.classList.add("bad");
+      $("status").textContent = text;
 
-    try {
-      const result = await createWorkItem(apiBase, tokenNow, payload);
+      const badge = $("authBadge");
+      badge.classList.remove("ok", "bad");
+      if (state === "ok") badge.classList.add("ok");
+      if (state === "bad") badge.classList.add("bad");
+      badge.innerHTML = `<span class="miniDot"></span><span>Auth: ${text}</span>`;
+    }
 
-      lastWorkItemId = result && result.id ? String(result.id) : null;
-      lastTicket4 = lastWorkItemId ? hashTo4Digits(lastWorkItemId) : nextLocalTicket();
+    function setSegmentBadge(segment) {
+      const b = $("segBadge");
+      if (!b) return;
+      b.innerHTML = `<span class="miniDot"></span><span>Segment: ${segment || "—"}</span>`;
+    }
 
-      $("ticketNumber").textContent = lastTicket4;
-      $("ticketMsg").textContent = "Thank you. Please wait—connecting you to an agent…";
-      setStatus("ok", "Authenticated");
-      setDebug({ response: result, ticketNumber: lastTicket4, segment: selectedSegment, request: selectedRequest, typeId });
+    function setDebug(obj) {
+      $("debug").textContent = typeof obj === "string" ? obj : JSON.stringify(obj, null, 2);
+    }
 
-      // Move to waiting screen but KEEP the big 4 digits
-      $("waitTicketNumber").textContent = lastTicket4;
-      $("wSeg").textContent = selectedSegment;
-      $("wReq").textContent = selectedRequest;
-      $("wPhone").textContent = phoneDigits;
-      $("wTypeId").textContent = typeId;
-      $("wWorkItemId").textContent = lastWorkItemId || "—";
-      $("wAssignment").textContent = "—";
-      showScreen("screenWaiting");
+    function showScreen(which) {
+      ["screenSegment", "screenRequest", "screenPhone", "screenTicket", "screenWaiting", "screenVideo"]
+        .forEach(id => $(id).classList.add("hidden"));
+      $(which).classList.remove("hidden");
+    }
 
-      if (!lastWorkItemId) {
-        alert("Work item created but no ID returned, cannot poll /workitems/{id}.");
+    function toggleConfig() {
+      $("configPanel").classList.toggle("hidden");
+    }
+
+    function parseFragment() {
+      const hash = window.location.hash.startsWith("#") ? window.location.hash.slice(1) : window.location.hash;
+      const params = new URLSearchParams(hash);
+      return Object.fromEntries(params.entries());
+    }
+
+    function saveToken(token, expiresInSeconds) {
+      const expiresAt = Date.now() + (Number(expiresInSeconds || "0") * 1000);
+      sessionStorage.setItem("gc_access_token", token);
+      sessionStorage.setItem("gc_expires_at", String(expiresAt));
+    }
+
+    function getTokenFromStorage() {
+      const token = sessionStorage.getItem("gc_access_token");
+      const exp = Number(sessionStorage.getItem("gc_expires_at") || "0");
+      if (!token) return null;
+      if (exp && Date.now() > exp - 30_000) return null;
+      return token;
+    }
+
+    function clearToken() {
+      sessionStorage.removeItem("gc_access_token");
+      sessionStorage.removeItem("gc_expires_at");
+    }
+
+    function randomState() {
+      return Math.random().toString(16).slice(2) + Math.random().toString(16).slice(2);
+    }
+
+    function authorizeBase() {
+      return `https://login.${ENVIRONMENT}/oauth/authorize`;
+    }
+
+    function buildAuthorizeUrl() {
+      const u = new URL(authorizeBase());
+      u.searchParams.set("response_type", "token");
+      u.searchParams.set("client_id", CLIENT_ID);
+      u.searchParams.set("redirect_uri", REDIRECT_URI);
+
+      const st = randomState();
+      sessionStorage.setItem("gc_oauth_state", st);
+      u.searchParams.set("state", st);
+
+      const prompt = $("forcePrompt").value;
+      if (prompt) u.searchParams.set("prompt", prompt);
+
+      return u.toString();
+    }
+
+    function login() {
+      const url = buildAuthorizeUrl();
+      setDebug({ step: "Redirecting to authorize URL", url });
+      window.location.href = url;
+    }
+
+    // ====== APIs ======
+    async function createWorkItem(apiBase, token, payload) {
+      const url = apiBase.replace(/\/$/, "") + "/api/v2/taskmanagement/workitems";
+      const res = await fetch(url, {
+        method: "POST",
+        headers: {
+          "Authorization": `Bearer ${token}`,
+          "Content-Type": "application/json",
+          "Accept": "application/json"
+        },
+        body: JSON.stringify(payload)
+      });
+
+      const text = await res.text();
+      let data;
+      try { data = text ? JSON.parse(text) : {}; } catch { data = { raw: text }; }
+
+      if (!res.ok) {
+        throw new Error(`Create work item failed (${res.status}): ${JSON.stringify(data)}`);
+      }
+      return data;
+    }
+
+    async function getWorkItem(apiBase, token, workItemId) {
+      const url = apiBase.replace(/\/$/, "") + `/api/v2/taskmanagement/workitems/${encodeURIComponent(workItemId)}`;
+      const res = await fetch(url, {
+        method: "GET",
+        headers: {
+          "Authorization": `Bearer ${token}`,
+          "Accept": "application/json"
+        }
+      });
+
+      const text = await res.text();
+      let data;
+      try { data = text ? JSON.parse(text) : {}; } catch { data = { raw: text }; }
+
+      if (!res.ok) {
+        throw new Error(`Get work item failed (${res.status}): ${JSON.stringify(data)}`);
+      }
+      return data;
+    }
+
+    // ====== Ticket number: stable 4-digit from id, or local counter fallback ======
+    function hashTo4Digits(str) {
+      let h = 0;
+      for (let i = 0; i < str.length; i++) h = (h * 31 + str.charCodeAt(i)) >>> 0;
+      const n = (h % 9000) + 1000;
+      return String(n);
+    }
+    function nextLocalTicket() {
+      const key = "kiosk_ticket_counter";
+      const cur = Number(localStorage.getItem(key) || "1000");
+      const next = cur + 1;
+      localStorage.setItem(key, String(next));
+      return String(next).padStart(4, "0");
+    }
+
+    // ====== Polling: show Start Video screen when assignmentState == Connected ======
+    let pollTimer = null;
+    function stopPolling() {
+      if (pollTimer) clearInterval(pollTimer);
+      pollTimer = null;
+    }
+
+    function startPollingForConnected(apiBase, token, workItemId) {
+      stopPolling();
+      const trigger = () => ($("assignmentTrigger") ? $("assignmentTrigger").value.trim() : "Connected");
+
+      pollTimer = setInterval(async () => {
+        try {
+          const wi = await getWorkItem(apiBase, token, workItemId);
+          const assignment = wi && wi.assignmentState ? String(wi.assignmentState) : "(unknown)";
+          $("wAssignment").textContent = assignment;
+
+          setDebug({ step: "Polling work item", workItemId, assignmentState: assignment });
+
+          if (assignment === trigger()) {
+            stopPolling();
+            // IMPORTANT CHANGE: show blank "Start Video" interface, do NOT auto-open video.
+            showScreen("screenVideo");
+          }
+        } catch (e) {
+          const msg = String(e && e.message ? e.message : e);
+          setDebug({ pollError: msg, workItemId });
+        }
+      }, POLL_INTERVAL_MS);
+    }
+
+    // ====== Kiosk state ======
+    let selectedSegment = null;
+    let selectedRequest = null;
+    let phoneDigits = "";
+    let lastTicket4 = "—";
+    let lastWorkItemId = null;
+
+    function renderSegmentGrid() {
+      const grid = $("segGrid");
+      grid.innerHTML = "";
+      for (const opt of SEGMENT_OPTIONS) {
+        const card = document.createElement("div");
+        card.className = "reqCard";
+        card.innerHTML = `<div><strong>${opt.label}</strong><div><span>${opt.hint}</span></div></div><div style="color:var(--muted)">›</div>`;
+        card.addEventListener("click", () => {
+          selectedSegment = opt.label;
+          selectedRequest = null;
+          phoneDigits = "";
+          setSegmentBadge(selectedSegment);
+          showScreen("screenRequest");
+        });
+        grid.appendChild(card);
+      }
+    }
+
+    function renderRequestGrid() {
+      const grid = $("reqGrid");
+      grid.innerHTML = "";
+      for (const opt of REQUEST_OPTIONS) {
+        const card = document.createElement("div");
+        card.className = "reqCard";
+        card.innerHTML = `<div><strong>${opt.label}</strong><div><span>${opt.hint}</span></div></div><div style="color:var(--muted)">›</div>`;
+        card.addEventListener("click", () => {
+          selectedRequest = opt.label;
+
+          // show computed worktype id in config (display-only)
+          const typeId = WORKTYPE_ID_BY_REQUEST[selectedRequest] || "(unknown)";
+          $("typeId").value = typeId;
+
+          phoneDigits = "";
+          $("phoneDisplay").textContent = "—";
+          $("phoneHint").textContent = `Segment: ${selectedSegment || "—"} • Request: ${selectedRequest}`;
+          showScreen("screenPhone");
+        });
+        grid.appendChild(card);
+      }
+    }
+
+    function updatePhoneDisplay() {
+      $("phoneDisplay").textContent = phoneDigits.length ? phoneDigits : "—";
+    }
+    function addDigit(d) { if (phoneDigits.length < 15) { phoneDigits += d; updatePhoneDisplay(); } }
+    function backspaceDigit() { phoneDigits = phoneDigits.slice(0, -1); updatePhoneDisplay(); }
+    function clearDigits() { phoneDigits = ""; updatePhoneDisplay(); }
+
+    async function submitWorkItemFromKiosk() {
+      const tokenNow = getTokenFromStorage();
+      if (!tokenNow) { alert("Not authenticated. Click Login first."); setStatus("bad", "Not authenticated"); return; }
+
+      if (!selectedSegment) { alert("Please select a customer segment."); showScreen("screenSegment"); return; }
+      if (!selectedRequest) { alert("Please select a request."); showScreen("screenRequest"); return; }
+      if (!phoneDigits || phoneDigits.length < 6) { alert("Please enter a valid phone number."); return; }
+
+      const apiBase = $("apiBase").value.trim();
+      const workbinId = $("workbinId").value.trim();
+      const queueId = $("queueId").value.trim();
+      const location = $("location").value.trim();
+      const workItemType = $("workItemType").value.trim();
+
+      // choose worktype ID based on request
+      const typeId = WORKTYPE_ID_BY_REQUEST[selectedRequest];
+      if (!typeId) {
+        alert("No Worktype ID mapped for this request.");
+        setStatus("bad", "Failed");
+        setDebug({ error: "missing_worktype_mapping", selectedRequest });
         return;
       }
 
-      startPollingForConnected(apiBase, tokenNow, lastWorkItemId);
+      const customFieldsObj = {
+        customer_segment_text: selectedSegment,
+        customer_phone_number_text: phoneDigits,
+        work_item_location_text: location,
+        work_item_task_text: selectedRequest,
+        work_item_type_text: workItemType,
+        date_time_datetime: new Date().toISOString()
+      };
 
-    } catch (e) {
-      const msg = String(e && e.message ? e.message : e);
+      const payload = { typeId, workbinId, queueId, name: selectedRequest, customFields: customFieldsObj };
+
+      setDebug({ step: "Submitting work item", endpoint: apiBase + "/api/v2/taskmanagement/workitems", payload });
+
+      // Ticket screen (show immediately)
       $("ticketNumber").textContent = "—";
-      $("ticketMsg").textContent = "Submission failed. See debug.";
-      setStatus("bad", "Failed");
-      setDebug(msg);
-      alert(msg);
-      showScreen("screenPhone");
-    }
-  }
+      $("ticketMsg").textContent = "Submitting…";
+      $("tSeg").textContent = selectedSegment;
+      $("tReq").textContent = selectedRequest;
+      $("tPhone").textContent = phoneDigits;
+      $("tBranch").textContent = location;
+      $("tTypeId").textContent = typeId;
+      $("tCreated").textContent = new Date().toLocaleString();
+      showScreen("screenTicket");
 
-  // ====== Init ======
-  document.addEventListener("DOMContentLoaded", () => {
-    const jsBadge = $("jsBadge");
-    jsBadge.classList.add("ok");
-    jsBadge.innerHTML = `<span class="miniDot"></span><span>JS loaded ✅</span>`;
+      try {
+        const result = await createWorkItem(apiBase, tokenNow, payload);
 
-    $("clientPreview").textContent = CLIENT_ID;
-    $("redirPreview").textContent = REDIRECT_URI;
-    $("authBasePreview").textContent = authorizeBase();
+        lastWorkItemId = result && result.id ? String(result.id) : null;
+        lastTicket4 = lastWorkItemId ? hashTo4Digits(lastWorkItemId) : nextLocalTicket();
 
-    renderSegmentGrid();
-    renderRequestGrid();
+        $("ticketNumber").textContent = lastTicket4;
+        $("ticketMsg").textContent = "Thank you. Please wait—connecting you to an agent…";
+        setStatus("ok", "Authenticated");
+        setDebug({ response: result, ticketNumber: lastTicket4, segment: selectedSegment, request: selectedRequest, typeId });
 
-    // OAuth callback handling
-    const frag = parseFragment();
-    if (Object.keys(frag).length > 0) {
-      setDebug({ step: "OAuth callback fragment detected", fragment: frag });
+        // Move to waiting screen but KEEP the big 4 digits
+        $("waitTicketNumber").textContent = lastTicket4;
+        $("wSeg").textContent = selectedSegment;
+        $("wReq").textContent = selectedRequest;
+        $("wPhone").textContent = phoneDigits;
+        $("wTypeId").textContent = typeId;
+        $("wWorkItemId").textContent = lastWorkItemId || "—";
+        $("wAssignment").textContent = "—";
+        showScreen("screenWaiting");
 
-      if (frag.error) {
-        setStatus("bad", "Auth error");
-        alert(`OAuth error: ${frag.error}${frag.error_description ? "\n" + frag.error_description : ""}`);
-      } else if (frag.access_token && (frag.token_type || "").toLowerCase() === "bearer") {
-        const expected = sessionStorage.getItem("gc_oauth_state");
-        if (frag.state && expected && frag.state !== expected) {
-          setStatus("bad", "Auth error");
-          alert("OAuth state mismatch.");
-          setDebug({ error: "state_mismatch", expected, got: frag.state });
-        } else {
-          saveToken(frag.access_token, frag.expires_in || "0");
-          setStatus("ok", "Authenticated");
+        if (!lastWorkItemId) {
+          alert("Work item created but no ID returned, cannot poll /workitems/{id}.");
+          return;
         }
+
+        startPollingForConnected(apiBase, tokenNow, lastWorkItemId);
+
+      } catch (e) {
+        const msg = String(e && e.message ? e.message : e);
+        $("ticketNumber").textContent = "—";
+        $("ticketMsg").textContent = "Submission failed. See debug.";
+        setStatus("bad", "Failed");
+        setDebug(msg);
+        alert(msg);
+        showScreen("screenPhone");
       }
-      history.replaceState(null, document.title, window.location.pathname + window.location.search);
     }
 
-    const token = getTokenFromStorage();
-    if (token) setStatus("ok", "Authenticated");
-    else setStatus("bad", "Not authenticated");
+    // ====== Init ======
+    document.addEventListener("DOMContentLoaded", () => {
+      const jsBadge = $("jsBadge");
+      jsBadge.classList.add("ok");
+      jsBadge.innerHTML = `<span class="miniDot"></span><span>JS loaded ✅</span>`;
 
-    $("loginBtn").addEventListener("click", () => login());
-    $("logoutBtn").addEventListener("click", () => {
-      clearToken();
-      stopPolling();
-      setStatus("bad", "Not authenticated");
-      alert("Logged out.");
-      showScreen("screenSegment");
-    });
+      $("clientPreview").textContent = CLIENT_ID;
+      $("redirPreview").textContent = REDIRECT_URI;
+      $("authBasePreview").textContent = authorizeBase();
 
-    $("toggleConfigBtnSeg").addEventListener("click", toggleConfig);
-    $("toggleConfigBtn").addEventListener("click", toggleConfig);
-    $("toggleConfigBtn2").addEventListener("click", toggleConfig);
-    $("toggleConfigBtn3").addEventListener("click", toggleConfig);
-    $("toggleConfigBtn4").addEventListener("click", toggleConfig);
-    $("toggleConfigBtn5").addEventListener("click", toggleConfig);
+      renderSegmentGrid();
+      renderRequestGrid();
+      toggleConfig();
 
-    $("backToSegmentBtn").addEventListener("click", () => {
-      selectedRequest = null;
-      phoneDigits = "";
-      showScreen("screenSegment");
-    });
+      // OAuth callback handling
+      const frag = parseFragment();
+      if (Object.keys(frag).length > 0) {
+        setDebug({ step: "OAuth callback fragment detected", fragment: frag });
 
-    $("backToRequestBtn").addEventListener("click", () => showScreen("screenRequest"));
+        if (frag.error) {
+          setStatus("bad", "Auth error");
+          alert(`OAuth error: ${frag.error}${frag.error_description ? "\n" + frag.error_description : ""}`);
+        } else if (frag.access_token && (frag.token_type || "").toLowerCase() === "bearer") {
+          const expected = sessionStorage.getItem("gc_oauth_state");
+          if (frag.state && expected && frag.state !== expected) {
+            setStatus("bad", "Auth error");
+            alert("OAuth state mismatch.");
+            setDebug({ error: "state_mismatch", expected, got: frag.state });
+          } else {
+            saveToken(frag.access_token, frag.expires_in || "0");
+            setStatus("ok", "Authenticated");
+          }
+        }
+        history.replaceState(null, document.title, window.location.pathname + window.location.search);
+      }
 
-    $("newTicketBtn").addEventListener("click", () => {
-      selectedSegment = null;
-      selectedRequest = null;
-      phoneDigits = "";
-      $("typeId").value = "(auto)";
-      stopPolling();
-      setSegmentBadge(null);
-      showScreen("screenSegment");
-    });
+      const token = getTokenFromStorage();
+      if (token) setStatus("ok", "Authenticated");
+      else setStatus("bad", "Not authenticated");
 
-    $("cancelWaitBtn").addEventListener("click", () => {
-      stopPolling();
-      alert("Cancelled.");
-      selectedSegment = null;
-      selectedRequest = null;
-      phoneDigits = "";
-      $("typeId").value = "(auto)";
-      setSegmentBadge(null);
-      showScreen("screenSegment");
-    });
-
-    $("endVideoBtn").addEventListener("click", () => {
-      stopPolling();
-      selectedSegment = null;
-      selectedRequest = null;
-      phoneDigits = "";
-      $("typeId").value = "(auto)";
-      setSegmentBadge(null);
-      showScreen("screenSegment");
-    });
-
-    // Start Video button: directly call TrueEngage openView without checking load state
-    $("startVideoBtn").addEventListener("click", () => {
-      window.trueengage.openView('video', false);
-    });
-
-    document.querySelectorAll(".key").forEach(el => {
-      el.addEventListener("click", async () => {
-        const k = el.getAttribute("data-key");
-        const act = el.getAttribute("data-action");
-        if (k) addDigit(k);
-        else if (act === "back") backspaceDigit();
-        else if (act === "clear") clearDigits();
-        else if (act === "ok") await submitWorkItemFromKiosk();
+      $("loginBtn").addEventListener("click", () => login());
+      $("logoutBtn").addEventListener("click", () => {
+        clearToken();
+        stopPolling();
+        setStatus("bad", "Not authenticated");
+        alert("Logged out.");
+        showScreen("screenSegment");
       });
-    });
 
-    setSegmentBadge(selectedSegment);
-    showScreen("screenSegment");
-  });
-</script>
+      $("toggleConfigBtnSeg").addEventListener("click", toggleConfig);
+      $("toggleConfigBtn").addEventListener("click", toggleConfig);
+      $("toggleConfigBtn2").addEventListener("click", toggleConfig);
+      $("toggleConfigBtn3").addEventListener("click", toggleConfig);
+      $("toggleConfigBtn4").addEventListener("click", toggleConfig);
+      $("toggleConfigBtn5").addEventListener("click", toggleConfig);
+
+      $("backToSegmentBtn").addEventListener("click", () => {
+        selectedRequest = null;
+        phoneDigits = "";
+        showScreen("screenSegment");
+      });
+
+      $("backToRequestBtn").addEventListener("click", () => showScreen("screenRequest"));
+
+      $("newTicketBtn").addEventListener("click", () => {
+        selectedSegment = null;
+        selectedRequest = null;
+        phoneDigits = "";
+        $("typeId").value = "(auto)";
+        stopPolling();
+        setSegmentBadge(null);
+        showScreen("screenSegment");
+      });
+
+      $("cancelWaitBtn").addEventListener("click", () => {
+        stopPolling();
+        alert("Cancelled.");
+        selectedSegment = null;
+        selectedRequest = null;
+        phoneDigits = "";
+        $("typeId").value = "(auto)";
+        setSegmentBadge(null);
+        showScreen("screenSegment");
+      });
+
+      $("endVideoBtn").addEventListener("click", () => {
+        stopPolling();
+        selectedSegment = null;
+        selectedRequest = null;
+        phoneDigits = "";
+        $("typeId").value = "(auto)";
+        setSegmentBadge(null);
+        showScreen("screenSegment");
+      });
+
+      // Start Video button: directly call TrueEngage openView without checking load state
+      $("startVideoBtn").addEventListener("click", () => {
+        window.trueengage.openView('video', false);
+      });
+
+      document.querySelectorAll(".key").forEach(el => {
+        el.addEventListener("click", async () => {
+          const k = el.getAttribute("data-key");
+          const act = el.getAttribute("data-action");
+          if (k) addDigit(k);
+          else if (act === "back") backspaceDigit();
+          else if (act === "clear") clearDigits();
+          else if (act === "ok") await submitWorkItemFromKiosk();
+        });
+      });
+
+      setSegmentBadge(selectedSegment);
+      showScreen("screenSegment");
+    });
+  </script>
 </body>
+
 </html>
